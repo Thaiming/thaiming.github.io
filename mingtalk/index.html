@@ -1,0 +1,1967 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>밍톡</title>
+<meta name="apple-mobile-web-app-title" content="밍톡">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="application-name" content="밍톡">
+<meta name="description" content="밍톡 · 나 혼자 쓰는 메모 메신저">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<style>
+  :root{
+    --kakao:#FEE500;
+    --sky:#BACEE0;
+    --ink:#191919;
+    --sub:#8A939B;
+    --line:#E6E9EC;
+    --danger:#E4574C;
+    --bubble-ink:#3C1E1E;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Pretendard','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',sans-serif;
+    background:#E3E9EF;color:var(--ink);overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+  }
+  [hidden]{display:none !important}
+  button{font-family:inherit;color:inherit}
+  input,textarea{font-family:inherit}
+  .app{position:relative;display:flex;width:100%;max-width:1200px;height:100vh;height:100dvh;background:#fff;overflow:hidden}
+  @media (min-width:1100px){
+    .app{height:calc(100dvh - 36px);border-radius:20px;box-shadow:0 20px 60px rgba(25,45,65,.18)}
+  }
+
+  /* ---------- 좌측 레일 ---------- */
+  .rail{
+    flex:0 0 68px;width:68px;background:#F6F7F9;border-right:1px solid var(--line);
+    display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 0 12px;z-index:3;
+  }
+  .rail-profile{
+    width:40px;height:40px;border-radius:15px;border:0;background:var(--kakao);color:var(--bubble-ink);
+    font-weight:800;font-size:15px;display:grid;place-items:center;cursor:pointer;margin-bottom:10px;
+    box-shadow:0 2px 6px rgba(180,150,0,.22);
+  }
+  .rail-btn{
+    width:46px;height:44px;border:0;background:transparent;border-radius:13px;color:#828C96;
+    display:grid;place-items:center;cursor:pointer;transition:background .15s,color .15s;
+  }
+  .rail-btn:hover{background:#EBEEF1;color:#3B4A57}
+  .rail-btn.active{background:#fff;color:#2E3D4A;box-shadow:0 1px 3px rgba(30,50,70,.10)}
+  .rail-spacer{flex:1}
+
+  /* ---------- 방 목록 ---------- */
+  .list-panel{
+    flex:0 0 328px;width:328px;display:flex;flex-direction:column;background:#fff;
+    border-right:1px solid var(--line);min-width:0;z-index:2;
+  }
+  .list-head{padding:16px 16px 12px;background:var(--sky);flex:0 0 auto}
+  .list-head-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+  .list-head h1{margin:0;font-size:17px;font-weight:800;letter-spacing:-0.2px;color:#26343F}
+  .head-actions{display:flex;gap:2px}
+  .icon-btn{
+    width:32px;height:32px;border:0;background:transparent;border-radius:9px;color:#4A5A67;
+    display:grid;place-items:center;cursor:pointer;transition:background .15s,color .15s;
+  }
+  .icon-btn:hover{background:rgba(255,255,255,.55)}
+  .icon-btn svg{width:19px;height:19px;display:block}
+  .search-wrap{position:relative}
+  .search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:#6C7B88;pointer-events:none}
+  #roomSearch{
+    width:100%;border:0;border-radius:10px;background:rgba(255,255,255,.80);
+    padding:8px 10px 8px 32px;font-size:13px;color:#22313D;outline:none;
+  }
+  #roomSearch::placeholder{color:#7F8D99}
+  #roomSearch:focus{background:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.9)}
+  .mobile-tabs{display:none;gap:6px;margin:0 0 10px}
+  .mobile-tab{
+    flex:1;border:0;background:rgba(255,255,255,.45);color:#3C4C59;font-size:12.5px;font-weight:700;
+    padding:7px 0;border-radius:9px;cursor:pointer;
+  }
+  .mobile-tab.active{background:#fff;color:#22313D;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+
+  .list-body{flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain}
+  .list-meta{padding:10px 18px 4px;font-size:11px;color:#9AA4AD;font-weight:700}
+  .room{
+    display:flex;align-items:center;gap:11px;padding:9px 14px;cursor:pointer;position:relative;
+    border:0;background:transparent;width:100%;text-align:left;font-family:inherit;
+  }
+  .room:hover{background:#F6F8F9}
+  .room.active{background:#EDF3F8}
+  .room.active::before{content:'';position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:#5B93C4}
+  .avatar{
+    flex:0 0 44px;width:44px;height:44px;border-radius:16px;display:grid;place-items:center;
+    font-weight:800;font-size:17px;letter-spacing:-0.5px;
+  }
+  .room-main{flex:1;min-width:0}
+  .room-top{display:flex;align-items:center;gap:6px}
+  .room-name{
+    font-size:14px;font-weight:700;color:#1E2429;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;flex:1;min-width:0;
+  }
+  .pin-tag{font-size:9.5px;font-weight:800;color:#8A6B00;background:#FFF2B8;border-radius:5px;padding:1px 5px;flex:0 0 auto}
+  .room-time{font-size:10.5px;color:#A3ACB4;flex:0 0 auto;margin-left:auto;white-space:nowrap}
+  .room-preview{font-size:12.5px;color:#8E979F;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .room.active .room-preview{color:#7C8891}
+  mark.hit{background:#FFD86B;color:inherit;border-radius:3px;padding:0 1px}
+  mark.hit.active{background:#FF7A00;color:#fff}
+  .list-empty{padding:44px 26px;text-align:center;color:#9AA4AD;font-size:13px;line-height:1.65;white-space:pre-line}
+  .list-foot{
+    padding:9px 12px;border-top:1px solid var(--line);display:flex;align-items:center;gap:6px;
+    background:#FBFCFC;flex:0 0 auto;
+  }
+  .mini-btn{
+    border:1px solid var(--line);background:#fff;color:#5C6873;font-size:11.5px;font-weight:700;
+    padding:5px 9px;border-radius:8px;cursor:pointer;white-space:nowrap;
+  }
+  .mini-btn:hover{background:#F3F5F7}
+  .foot-note{font-size:10px;color:#AAB2BA;margin-left:auto;text-align:right;line-height:1.35}
+
+  /* ---------- 친구 탭 ---------- */
+  .friends{padding:16px 16px 26px}
+  .me-card{display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;background:#FAFBFC;border:1px solid var(--line)}
+  .me-avatar{
+    width:54px;height:54px;border-radius:19px;background:var(--kakao);color:var(--bubble-ink);
+    font-weight:800;font-size:20px;display:grid;place-items:center;flex:0 0 auto;
+  }
+  .me-info{min-width:0}
+  .me-info strong{display:block;font-size:15px;font-weight:800;color:#1F262C}
+  .me-info span{font-size:12px;color:#93A0AB}
+  .sec-title{font-size:11.5px;font-weight:800;color:#9AA4AD;margin:20px 2px 8px;letter-spacing:.02em}
+  .quick-row{display:flex;gap:6px}
+  #quickMemo{
+    flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;padding:9px 11px;
+    font-size:13px;outline:none;background:#fff;color:#1B2228;
+  }
+  #quickMemo:focus{border-color:#BCD0E1;box-shadow:0 0 0 3px rgba(186,206,224,.30)}
+  #quickSave{
+    border:0;background:var(--kakao);color:var(--bubble-ink);font-weight:800;font-size:12.5px;
+    padding:0 14px;border-radius:10px;cursor:pointer;flex:0 0 auto;
+  }
+  #quickSave:hover{filter:brightness(.97)}
+  .shortcut{
+    display:flex;align-items:center;gap:9px;width:100%;border:0;background:transparent;
+    padding:9px 8px;border-radius:10px;cursor:pointer;text-align:left;font-family:inherit;
+  }
+  .shortcut:hover{background:#F5F7F9}
+  .sc-dot{width:10px;height:10px;border-radius:4px;flex:0 0 10px}
+  .sc-name{flex:1;min-width:0;font-size:13.5px;font-weight:600;color:#2A343C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sc-count{font-size:11px;color:#A6AFB7;flex:0 0 auto}
+  .data-btns{display:flex;gap:8px;flex-wrap:wrap}
+  .hint{font-size:11.5px;line-height:1.65;color:#98A2AB;margin:10px 2px 0}
+
+  /* ---------- 채팅창 ---------- */
+  .chat-panel{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;background:var(--sky)}
+  .chat-head{
+    display:flex;align-items:center;gap:6px;padding:9px 12px;background:var(--sky);
+    border-bottom:1px solid rgba(40,60,80,.08);z-index:5;flex:0 0 auto;
+  }
+  .back-btn{display:none}
+  .chat-title{flex:1;min-width:0;padding-right:4px}
+  .chat-title h2{
+    margin:0;font-size:15px;font-weight:800;color:#25333F;letter-spacing:-0.2px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .chat-title span{display:block;font-size:10.5px;color:#5D7286;margin-top:1px}
+  .chat-actions{display:flex;gap:2px;flex:0 0 auto}
+  .chat-actions .icon-btn{color:#3E5160}
+
+  .chat-search{
+    display:flex;align-items:center;gap:6px;padding:8px 12px;background:rgba(255,255,255,.65);
+    border-bottom:1px solid rgba(40,60,80,.08);z-index:4;flex:0 0 auto;
+  }
+  #chatSearchInput{flex:1;min-width:0;border:0;border-radius:9px;padding:7px 10px;font-size:13px;background:#fff;outline:none}
+  #chatSearchCount{font-size:11px;color:#3F5364;min-width:54px;text-align:center;font-weight:700}
+  .snav{border:0;background:rgba(255,255,255,.8);color:#3E5060;border-radius:8px;width:26px;height:26px;cursor:pointer;font-size:11px;flex:0 0 auto}
+  .snav:hover{background:#fff}
+
+  .messages{
+    flex:1;overflow-y:auto;overflow-x:hidden;padding:12px 18px 20px;
+    display:flex;flex-direction:column;overscroll-behavior:contain;
+    background-color:var(--sky);
+    background-image:radial-gradient(rgba(255,255,255,.30) 1px,transparent 1.2px);
+    background-size:20px 20px;
+  }
+  .msg-spacer{flex:0 0 auto;margin-top:auto;height:0}
+  .date-row{display:flex;justify-content:center;margin:14px 0 10px}
+  .date-pill{
+    background:rgba(255,255,255,.62);color:#4C5F6E;font-size:11px;font-weight:700;
+    padding:4px 13px;border-radius:20px;
+  }
+  .msg-row{display:flex;justify-content:flex-end;align-items:flex-end;gap:5px;margin:2px 0;position:relative}
+  .msg-row.gap{margin-top:9px}
+  .msg-more{
+    opacity:0;border:0;background:rgba(255,255,255,.60);color:#5A6C7B;border-radius:7px;
+    width:22px;height:22px;font-size:13px;line-height:1;cursor:pointer;transition:opacity .12s;
+    margin-bottom:3px;flex:0 0 auto;padding:0;
+  }
+  .msg-row:hover .msg-more{opacity:1}
+  .msg-time{color:rgba(46,63,77,.62);font-size:10.5px;margin-bottom:3px;flex:0 0 auto;letter-spacing:-0.1px}
+  .bubble{
+    position:relative;max-width:min(68%,520px);background:var(--kakao);color:var(--bubble-ink);
+    font-size:14px;line-height:1.5;padding:9px 13px;border-radius:15px;border-top-right-radius:5px;
+    white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;
+    box-shadow:0 1px 1px rgba(40,60,80,.06);
+  }
+  .bubble::after{
+    content:'';position:absolute;right:-5px;top:9px;width:0;height:0;
+    border-left:6px solid var(--kakao);border-top:5px solid transparent;border-bottom:5px solid transparent;
+  }
+  .bubble-image{padding:3px;background:#fff;border-radius:15px;border-top-right-radius:15px}
+  .bubble-image::after{display:none}
+  .bubble-image img{display:block;max-width:260px;max-height:320px;width:auto;height:auto;border-radius:12px;cursor:zoom-in}
+  .chat-hint{
+    margin:auto;color:#4F6373;font-size:12.5px;font-weight:600;background:rgba(255,255,255,.58);
+    padding:9px 16px;border-radius:18px;text-align:center;
+  }
+
+  .empty-chat{flex:1;display:grid;place-items:center;padding:24px}
+  .empty-card{
+    background:rgba(255,255,255,.88);border-radius:20px;padding:28px 28px 24px;text-align:center;
+    box-shadow:0 12px 34px rgba(40,60,80,.14);max-width:330px;
+  }
+  .empty-emoji{font-size:34px;line-height:1;margin-bottom:8px}
+  .empty-card h2{margin:0 0 6px;font-size:17px;font-weight:800;color:#24313C}
+  .empty-card p{margin:0 0 16px;font-size:12.5px;line-height:1.7;color:#66757F}
+
+  .composer{
+    flex:0 0 auto;display:flex;align-items:flex-end;gap:4px;padding:9px 10px;background:#fff;
+    border-top:1px solid rgba(40,60,80,.07);z-index:6;
+  }
+  .composer .icon-btn{color:#6B7885;width:34px;height:34px}
+  .composer .icon-btn svg{width:20px;height:20px}
+  #input{
+    flex:1;min-width:0;border:0;background:#F3F5F7;border-radius:12px;padding:9px 12px;font-size:14px;
+    line-height:1.45;resize:none;outline:none;max-height:120px;min-height:38px;color:#1B2228;
+  }
+  #input:focus{background:#EEF1F4}
+  #input::placeholder{color:#9AA5AE}
+  #btnSend{
+    border:0;background:var(--kakao);color:var(--bubble-ink);font-weight:800;font-size:13px;
+    padding:0 16px;height:38px;border-radius:12px;cursor:pointer;flex:0 0 auto;
+  }
+  #btnSend:hover:not(:disabled){filter:brightness(.97)}
+  #btnSend:disabled{opacity:.42;cursor:default}
+
+  .emoji-panel{
+    position:absolute;bottom:62px;left:10px;width:302px;max-width:calc(100% - 20px);background:#fff;
+    border-radius:14px;box-shadow:0 14px 40px rgba(20,40,60,.24);padding:10px;
+    display:grid;grid-template-columns:repeat(8,1fr);gap:2px;z-index:30;
+  }
+  .emoji-panel button{border:0;background:transparent;font-size:19px;line-height:1;padding:6px 0;border-radius:8px;cursor:pointer}
+  .emoji-panel button:hover{background:#F1F4F6}
+
+  /* ---------- 공통 오버레이 ---------- */
+  .ctx-menu{
+    position:fixed;z-index:60;min-width:152px;background:#fff;border-radius:12px;
+    box-shadow:0 12px 34px rgba(20,40,60,.24);padding:5px;display:flex;flex-direction:column;
+  }
+  .ctx-item{
+    border:0;background:transparent;text-align:left;font-size:13px;color:#2A343C;
+    padding:9px 11px;border-radius:8px;cursor:pointer;white-space:nowrap;font-family:inherit;
+  }
+  .ctx-item:hover{background:#F3F5F7}
+  .ctx-item.danger{color:var(--danger)}
+  .ctx-item.danger:hover{background:#FDEEEC}
+  .ctx-sep{height:1px;background:var(--line);margin:4px 6px}
+
+  .modal-backdrop{position:fixed;inset:0;background:rgba(20,32,44,.42);display:grid;place-items:center;z-index:80;padding:20px}
+  .modal{
+    width:100%;max-width:334px;background:#fff;border-radius:18px;padding:20px;
+    box-shadow:0 24px 60px rgba(10,25,40,.30);
+  }
+  .modal h3{margin:0 0 6px;font-size:15px;font-weight:800;color:#1D242B}
+  .modal-desc{margin:0 0 12px;font-size:12.5px;line-height:1.7;color:#66757F;white-space:pre-line}
+  .modal-input{
+    width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:14px;
+    outline:none;margin:2px 0 4px;color:#1B2228;
+  }
+  .modal-input:focus{border-color:#B9CEDF;box-shadow:0 0 0 3px rgba(186,206,224,.35)}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+  .btn{border:0;border-radius:10px;padding:9px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
+  .btn.ghost{background:#F2F4F6;color:#5B6874}
+  .btn.ghost:hover{background:#E9ECEF}
+  .btn.primary{background:var(--kakao);color:var(--bubble-ink)}
+  .btn.primary:hover{filter:brightness(.97)}
+  .btn.danger{background:var(--danger);color:#fff}
+  .btn.danger:hover{filter:brightness(.95)}
+
+  .lightbox{position:fixed;inset:0;background:rgba(10,18,26,.86);display:grid;place-items:center;z-index:90;padding:24px;cursor:zoom-out}
+  .lightbox img{max-width:100%;max-height:100%;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.55);object-fit:contain}
+  .lb-close{
+    position:absolute;top:14px;right:16px;border:0;background:rgba(255,255,255,.16);color:#fff;
+    width:36px;height:36px;border-radius:50%;font-size:15px;cursor:pointer;
+  }
+
+  #toast{
+    position:fixed;left:50%;bottom:78px;transform:translate(-50%,14px);background:#2C343B;color:#fff;
+    font-size:12.5px;font-weight:600;padding:10px 16px;border-radius:22px;
+    box-shadow:0 10px 26px rgba(0,0,0,.25);opacity:0;pointer-events:none;
+    transition:opacity .2s,transform .2s;z-index:100;display:flex;align-items:center;gap:10px;
+    max-width:calc(100% - 32px);
+  }
+  #toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+  .toast-action{border:0;background:transparent;color:var(--kakao);font-size:12.5px;font-weight:800;cursor:pointer;padding:0}
+
+  input[type=search]::-webkit-search-cancel-button,
+  input[type=search]::-webkit-search-decoration,
+  input[type=search]::-webkit-search-results-button{-webkit-appearance:none;appearance:none;display:none}
+
+  .list-body::-webkit-scrollbar,.messages::-webkit-scrollbar{width:8px}
+  .list-body::-webkit-scrollbar-thumb,.messages::-webkit-scrollbar-thumb{background:rgba(60,80,100,.18);border-radius:4px}
+  .list-body::-webkit-scrollbar-thumb:hover,.messages::-webkit-scrollbar-thumb:hover{background:rgba(60,80,100,.30)}
+
+  /* ---------- 모바일 ---------- */
+  @media (max-width:768px){
+    .app{height:100vh;height:100dvh;border-radius:0}
+    .rail{display:none}
+    .mobile-tabs{display:flex}
+    .list-panel{flex:1 1 auto;width:100%;border-right:0}
+    .chat-panel{
+      position:fixed;left:0;right:0;top:0;bottom:0;width:100%;max-width:none;
+      transform:translateX(100%);transition:transform .22s ease;z-index:40;
+    }
+    .app.chat-open .chat-panel{transform:translateX(0)}
+    .back-btn{display:grid}
+    .bubble{max-width:78%}
+    .bubble-image img{max-width:min(64vw,240px)}
+    .msg-more{display:none}
+    .bubble,.msg-time{-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+    .list-head{padding-top:calc(14px + env(safe-area-inset-top))}
+    .chat-head{padding-top:calc(10px + env(safe-area-inset-top))}
+    .composer{padding-bottom:calc(9px + env(safe-area-inset-bottom))}
+    .emoji-panel{bottom:calc(60px + env(safe-area-inset-bottom))}
+    #toast{bottom:calc(74px + env(safe-area-inset-bottom))}
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <nav class="rail" aria-label="주요 메뉴">
+    <button class="rail-profile" id="railProfile" title="내 프로필" aria-label="내 프로필">나</button>
+    <button class="rail-btn" data-view="friends" title="친구" aria-label="친구">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="9.5" cy="7.5" r="3.5"/><path d="M3 20v-1.4a4 4 0 0 1 4-4h5a4 4 0 0 1 4 4V20"/>
+        <path d="M17 4.6a3.4 3.4 0 0 1 0 6.6"/><path d="M20.6 20v-1.4a4 4 0 0 0-3-3.86"/>
+      </svg>
+    </button>
+    <button class="rail-btn active" data-view="rooms" title="채팅" aria-label="채팅">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 11.6a8.3 8.3 0 0 1-8.9 8.3 9.3 9.3 0 0 1-3.2-.6L4 21l1.6-4.4A8.2 8.2 0 0 1 3.1 11.6 8.3 8.3 0 0 1 12 3.3a8.3 8.3 0 0 1 9 8.3z"/>
+      </svg>
+    </button>
+    <div class="rail-spacer"></div>
+    <button class="rail-btn" id="railExport" title="JSON 백업 내보내기" aria-label="백업 내보내기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 4v10"/><path d="m8 10.5 4 4 4-4"/><path d="M4 17.5V19a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 20 19v-1.5"/>
+      </svg>
+    </button>
+  </nav>
+
+  <section class="list-panel" aria-label="방 목록">
+    <header class="list-head">
+      <div class="list-head-row">
+        <h1 id="listTitle">채팅</h1>
+        <div class="head-actions">
+          <button class="icon-btn" id="btnNewRoom" title="새 방 만들기" aria-label="새 방 만들기">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+              <path d="M12 5v14"/><path d="M5 12h14"/>
+            </svg>
+          </button>
+          <button class="icon-btn" id="btnHelp" title="사용법" aria-label="사용법">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2-2.4 3.6"/><path d="M12 17h.01"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="mobile-tabs">
+        <button class="mobile-tab active" data-view="rooms">채팅</button>
+        <button class="mobile-tab" data-view="friends">친구</button>
+      </div>
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/>
+        </svg>
+        <input id="roomSearch" type="search" placeholder="방 이름 · 대화 내용 검색" autocomplete="off">
+      </div>
+    </header>
+
+    <div class="list-body">
+      <div id="roomsView">
+        <div class="list-meta" id="listCount"></div>
+        <div id="roomList"></div>
+      </div>
+
+      <div id="friendsView" class="friends" hidden>
+        <div class="me-card">
+          <div class="me-avatar">나</div>
+          <div class="me-info">
+            <strong>나</strong>
+            <span>혼자 쓰는 메신저 · 밍톡</span>
+          </div>
+        </div>
+
+        <div class="sec-title">빠른 메모</div>
+        <div class="quick-row">
+          <input id="quickMemo" type="text" placeholder="한 줄 메모를 남겨 보세요" autocomplete="off">
+          <button id="quickSave">저장</button>
+        </div>
+        <p class="hint">저장하면 「나와의 채팅 (메모)」 방에 바로 쌓여요.</p>
+
+        <div class="sec-title">바로가기</div>
+        <div id="shortcutList"></div>
+
+        <div class="sec-title">데이터</div>
+        <div class="data-btns">
+          <button class="mini-btn" id="btnExport2">JSON 내보내기</button>
+          <button class="mini-btn" id="btnImport2">JSON 가져오기</button>
+        </div>
+        <p class="hint">모든 대화와 사진은 이 브라우저(localStorage)에만 저장돼요. 브라우저 기록을 지우면 함께 사라지니 가끔 내보내 두세요.</p>
+      </div>
+    </div>
+
+    <footer class="list-foot">
+      <button class="mini-btn" id="btnExport">내보내기</button>
+      <button class="mini-btn" id="btnImport">가져오기</button>
+      <span class="foot-note">로컬 저장</span>
+    </footer>
+  </section>
+
+  <section class="chat-panel" aria-label="채팅방">
+    <header class="chat-head">
+      <button class="icon-btn back-btn" id="btnBack" title="목록으로" aria-label="목록으로">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m14.5 5.5-6.5 6.5 6.5 6.5"/>
+        </svg>
+      </button>
+      <div class="chat-title">
+        <h2 id="chatTitle">밍톡</h2>
+        <span id="chatSub">방을 골라 주세요</span>
+      </div>
+      <div class="chat-actions">
+        <button class="icon-btn" id="btnChatSearch" title="대화 내용 검색" aria-label="대화 내용 검색">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="btnChatMenu" title="방 메뉴" aria-label="방 메뉴">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="chat-search" id="chatSearchBar" hidden>
+      <input id="chatSearchInput" type="search" placeholder="대화 내용 검색" autocomplete="off">
+      <span id="chatSearchCount"></span>
+      <button class="snav" id="searchPrev" title="이전 결과">▲</button>
+      <button class="snav" id="searchNext" title="다음 결과">▼</button>
+      <button class="snav" id="searchClose" title="검색 닫기">✕</button>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="empty-chat" id="emptyChat" hidden>
+      <div class="empty-card">
+        <div class="empty-emoji">💬</div>
+        <h2>밍톡</h2>
+        <p>왼쪽 목록에서 방을 고르거나<br>새 방을 만들어 시작해 보세요.</p>
+        <button class="btn primary" id="btnEmptyNew">＋ 새 방 만들기</button>
+      </div>
+    </div>
+
+    <div class="composer" id="composer">
+      <button class="icon-btn" id="btnAttach" title="사진 첨부" aria-label="사진 첨부">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.4 11.6 12 20a5.1 5.1 0 0 1-7.2-7.2l8.2-8.2a3.4 3.4 0 0 1 4.8 4.8l-8.1 8.1a1.7 1.7 0 0 1-2.4-2.4l7.4-7.4"/>
+        </svg>
+      </button>
+      <button class="icon-btn" id="btnEmoji" title="이모지" aria-label="이모지">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <circle cx="12" cy="12" r="9"/>
+          <path d="M8.6 14.2a4.4 4.4 0 0 0 6.8 0"/>
+          <path d="M9.2 9.4h.01M14.8 9.4h.01" stroke-width="2.4"/>
+        </svg>
+      </button>
+      <textarea id="input" rows="1" placeholder="메시지를 입력하세요" autocomplete="off"></textarea>
+      <button id="btnSend" disabled>전송</button>
+    </div>
+
+    <div class="emoji-panel" id="emojiPanel" hidden></div>
+  </section>
+</div>
+
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lb-close" aria-label="닫기">✕</button>
+  <img id="lightboxImg" alt="첨부한 사진">
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<input type="file" id="fileInput" accept="image/*" multiple hidden>
+<input type="file" id="importInput" accept="application/json,.json" hidden>
+
+<noscript>
+  <p style="padding:24px;font-family:sans-serif">이 앱은 자바스크립트가 필요합니다.</p>
+</noscript>
+
+<script>
+(function () {
+  'use strict';
+
+  var STORAGE_KEY = 'kokoTalk.data.v1';
+  var MAX_NAME = 40;
+  var WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+  var EMOJIS = ['😀','😄','😊','😍','🥰','😎','🤔','😅','😂','😭','😴','🥳','😇','🙃','😉','🤗','👍','👏','🙏','💪','🔥','✨','⭐️','💛','❤️','🎉','☕️','🍜','🍺','🌙','☀️','🌱','🐣','📌','✅','💡','📝','🎧','🚀','🌊'];
+  var COLORS = [
+    ['#FFF0B3', '#8A6B00'], ['#D8E8F7', '#3F6B94'], ['#DDF0E4', '#3C7557'], ['#FCE1E6', '#9A4C5C'],
+    ['#E8E2F8', '#5F52A0'], ['#FDE6D2', '#94603A'], ['#D9F0F2', '#356C74'], ['#F1E6D8', '#7A6248']
+  ];
+
+  function $(id) { return document.getElementById(id); }
+
+  function uid(prefix) {
+    return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+  function dateKey(ts) {
+    var d = new Date(ts);
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+  function dateLabel(ts) {
+    var d = new Date(ts);
+    return d.getFullYear() + '년 ' + (d.getMonth() + 1) + '월 ' + d.getDate() + '일 ' + WEEKDAYS[d.getDay()] + '요일';
+  }
+  function formatTime(ts) {
+    var d = new Date(ts);
+    var h = d.getHours();
+    var ampm = h < 12 ? '오전' : '오후';
+    var hh = h % 12;
+    if (hh === 0) hh = 12;
+    return ampm + ' ' + hh + ':' + pad2(d.getMinutes());
+  }
+  function startOfDay(ts) {
+    var d = new Date(ts);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }
+  function formatRoomTime(ts) {
+    if (!ts) return '';
+    var now = Date.now();
+    var today = startOfDay(now);
+    var day = startOfDay(ts);
+    if (day === today) return formatTime(ts);
+    if (day === today - 86400000) return '어제';
+    var diff = (today - day) / 86400000;
+    if (diff > 0 && diff < 7) return WEEKDAYS[new Date(ts).getDay()] + '요일';
+    var d = new Date(ts);
+    return (d.getMonth() + 1) + '월 ' + d.getDate() + '일';
+  }
+  function clip(s, max) {
+    var t = String(s || '').replace(/\s+/g, ' ').trim();
+    if (t.length > (max || 46)) t = t.slice(0, max || 46) + '…';
+    return t;
+  }
+  function avatarColors(name) {
+    if (name.indexOf('나와의') === 0) return COLORS[0];
+    var h = 0;
+    for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+    return COLORS[h % COLORS.length];
+  }
+  function stamp() {
+    var d = new Date();
+    return d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + '-' + pad2(d.getHours()) + pad2(d.getMinutes());
+  }
+
+  /* ---------------------------------------------------------------
+     데이터
+  --------------------------------------------------------------- */
+  function seedData() {
+    var now = Date.now();
+    var H = 3600000;
+    return {
+      version: 1,
+      me: { name: '나' },
+      activeRoomId: 'room_memo',
+      rooms: [
+        {
+          id: 'room_memo',
+          name: '나와의 채팅 (메모)',
+          pinned: true,
+          createdAt: now - 6 * 24 * H,
+          messages: [
+            { id: uid('m'), type: 'text', text: '여기는 나 혼자 쓰는 메모방이에요.\n생각날 때마다 툭 던져두면 나중에 찾기 쉬워요 ☕️', src: '', ts: now - 3 * H },
+            { id: uid('m'), type: 'text', text: '사진도 붙이고, 마음에 드는 문장도 모아두기 📌', src: '', ts: now - 2 * H }
+          ]
+        },
+        {
+          id: 'room_idea',
+          name: '아이디어 노트',
+          pinned: false,
+          createdAt: now - 4 * 24 * H,
+          messages: [
+            { id: uid('m'), type: 'text', text: '떠오른 아이디어는 일단 여기에 다 적어두기.\n좋은 건 나중에 다듬으면 되니까 ✏️', src: '', ts: now - 27 * H },
+            { id: uid('m'), type: 'text', text: '예) 주말에 창원 근교 드라이브 코스 정리해 보기 🚗', src: '', ts: now - 26 * H }
+          ]
+        },
+        {
+          id: 'room_todo',
+          name: '오늘 할 일',
+          pinned: false,
+          createdAt: now - 2 * 24 * H,
+          messages: [
+            { id: uid('m'), type: 'text', text: '✔ 오늘 할 일\n1. 장보기\n2. 밀린 메일 확인\n3. 저녁 산책 20분', src: '', ts: now - 5 * H },
+            { id: uid('m'), type: 'text', text: '끝난 일은 메시지를 지워서 정리하기 ✅', src: '', ts: now - 4 * H }
+          ]
+        }
+      ]
+    };
+  }
+
+  function normalize(data) {
+    var out = { version: 1, me: { name: '나' }, activeRoomId: null, rooms: [] };
+    if (!data || typeof data !== 'object') return seedData();
+    if (data.me && typeof data.me.name === 'string' && data.me.name.trim()) {
+      out.me.name = data.me.name.trim().slice(0, MAX_NAME);
+    }
+    if (Array.isArray(data.rooms)) {
+      data.rooms.forEach(function (r) {
+        if (!r || typeof r !== 'object') return;
+        var name = typeof r.name === 'string' ? r.name.trim() : '';
+        if (!name) return;
+        var msgs = [];
+        if (Array.isArray(r.messages)) {
+          r.messages.forEach(function (m) {
+            if (!m || typeof m !== 'object') return;
+            var ts = Number(m.ts);
+            if (!isFinite(ts)) ts = Date.now();
+            var isImage = m.type === 'image' && typeof m.src === 'string' && m.src.indexOf('data:') === 0;
+            var text = typeof m.text === 'string' ? m.text : '';
+            if (isImage) {
+              msgs.push({ id: typeof m.id === 'string' ? m.id : uid('m'), type: 'image', text: '', src: m.src, ts: ts });
+            } else if (text.trim()) {
+              msgs.push({ id: typeof m.id === 'string' ? m.id : uid('m'), type: 'text', text: text, src: '', ts: ts });
+            }
+          });
+        }
+        msgs.sort(function (a, b) { return a.ts - b.ts; });
+        out.rooms.push({
+          id: typeof r.id === 'string' && r.id ? r.id : uid('r'),
+          name: name.slice(0, MAX_NAME),
+          pinned: !!r.pinned,
+          createdAt: Number(r.createdAt) || (msgs.length ? msgs[0].ts : Date.now()),
+          messages: msgs
+        });
+      });
+    }
+    if (typeof data.activeRoomId === 'string') out.activeRoomId = data.activeRoomId;
+    if (!out.rooms.some(function (r) { return r.id === out.activeRoomId; })) {
+      out.activeRoomId = out.rooms.length ? out.rooms[0].id : null;
+    }
+    return out;
+  }
+
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return normalize(seedData());
+      return normalize(JSON.parse(raw));
+    } catch (err) {
+      return normalize(seedData());
+    }
+  }
+
+  var state = loadState();
+  var canPersist = probeStorage();
+  var view = 'rooms';
+  var query = '';
+  var chatQuery = '';
+  var hits = [];
+  var hitIndex = -1;
+  var saveTimer = null;
+  var toastTimer = null;
+  var menuEl = null;
+
+  function probeStorage() {
+    try {
+      var k = '__koko_probe__';
+      localStorage.setItem(k, '1');
+      localStorage.removeItem(k);
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function save() {
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(writeStore, 120);
+  }
+  function writeStore() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (err) {
+      toast(canPersist
+        ? '저장 공간이 부족해요. 백업 후 사진을 정리해 주세요.'
+        : '이 브라우저에서는 자동 저장이 막혀 있어요.');
+    }
+  }
+
+  function findRoom(id) {
+    if (!id) return null;
+    for (var i = 0; i < state.rooms.length; i++) {
+      if (state.rooms[i].id === id) return state.rooms[i];
+    }
+    return null;
+  }
+  function currentRoom() { return findRoom(state.activeRoomId); }
+  function findMessage(room, id) {
+    for (var i = 0; i < room.messages.length; i++) {
+      if (room.messages[i].id === id) return room.messages[i];
+    }
+    return null;
+  }
+  function roomLastTs(r) {
+    return r.messages.length ? r.messages[r.messages.length - 1].ts : r.createdAt;
+  }
+  function sortedRooms() {
+    return state.rooms.slice().sort(function (a, b) {
+      if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+      return roomLastTs(b) - roomLastTs(a);
+    });
+  }
+  function memoRoom() {
+    var byName = state.rooms.filter(function (r) { return r.name.indexOf('나와의') !== -1; })[0];
+    if (byName) return byName;
+    var pinned = state.rooms.filter(function (r) { return r.pinned; })[0];
+    if (pinned) return pinned;
+    return state.rooms[0] || null;
+  }
+
+  /* ---------------------------------------------------------------
+     공통 UI: 토스트 / 메뉴 / 다이얼로그
+  --------------------------------------------------------------- */
+  function toast(message, actionLabel, onAction) {
+    var root = $('toast');
+    root.innerHTML = '';
+    var span = document.createElement('span');
+    span.textContent = message;
+    root.appendChild(span);
+    if (actionLabel) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'toast-action';
+      btn.textContent = actionLabel;
+      btn.addEventListener('click', function () {
+        root.classList.remove('show');
+        if (onAction) onAction();
+      });
+      root.appendChild(btn);
+    }
+    root.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+      root.classList.remove('show');
+    }, actionLabel ? 6000 : 2400);
+  }
+
+  function closeMenu() {
+    if (menuEl) {
+      menuEl.remove();
+      menuEl = null;
+    }
+  }
+
+  function showMenu(x, y, items) {
+    closeMenu();
+    var menu = document.createElement('div');
+    menu.className = 'ctx-menu';
+    items.forEach(function (item) {
+      if (item.separator) {
+        var sep = document.createElement('div');
+        sep.className = 'ctx-sep';
+        menu.appendChild(sep);
+        return;
+      }
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ctx-item' + (item.danger ? ' danger' : '');
+      b.textContent = item.label;
+      b.addEventListener('click', function () {
+        closeMenu();
+        item.onClick();
+      });
+      menu.appendChild(b);
+    });
+    document.body.appendChild(menu);
+    var rect = menu.getBoundingClientRect();
+    var left = Math.min(x, window.innerWidth - rect.width - 8);
+    var limit = window.innerHeight - 8;
+    var composer = $('composer');
+    if (composer && !composer.hidden) {
+      var cr = composer.getBoundingClientRect();
+      if (cr.height > 0 && cr.top > 40) limit = Math.min(limit, cr.top - 6);
+    }
+    var top = y;
+    if (top + rect.height > limit) top = y - rect.height;
+    if (top + rect.height > limit) top = limit - rect.height;
+    menu.style.left = Math.max(8, left) + 'px';
+    menu.style.top = Math.max(8, top) + 'px';
+    menuEl = menu;
+  }
+
+  function openDialog(opts) {
+    return new Promise(function (resolve) {
+      var backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop';
+      var box = document.createElement('div');
+      box.className = 'modal';
+
+      var title = document.createElement('h3');
+      title.textContent = opts.title || '';
+      box.appendChild(title);
+
+      if (opts.desc) {
+        var desc = document.createElement('p');
+        desc.className = 'modal-desc';
+        desc.textContent = opts.desc;
+        box.appendChild(desc);
+      }
+
+      var inputEl = null;
+      if (opts.input) {
+        inputEl = document.createElement('input');
+        inputEl.className = 'modal-input';
+        inputEl.type = 'text';
+        inputEl.maxLength = MAX_NAME;
+        inputEl.value = opts.value || '';
+        inputEl.placeholder = opts.placeholder || '';
+        box.appendChild(inputEl);
+      }
+
+      var actions = document.createElement('div');
+      actions.className = 'modal-actions';
+      var cancel = document.createElement('button');
+      cancel.type = 'button';
+      cancel.className = 'btn ghost';
+      cancel.textContent = '취소';
+      var ok = document.createElement('button');
+      ok.type = 'button';
+      ok.className = 'btn ' + (opts.danger ? 'danger' : 'primary');
+      ok.textContent = opts.confirmLabel || '확인';
+      actions.appendChild(cancel);
+      actions.appendChild(ok);
+      box.appendChild(actions);
+      backdrop.appendChild(box);
+      document.body.appendChild(backdrop);
+
+      function close(result) {
+        document.removeEventListener('keydown', onKey, true);
+        backdrop.remove();
+        resolve(result);
+      }
+      function onKey(e) {
+        if (e.key === 'Escape') {
+          e.stopPropagation();
+          close(null);
+        } else if (e.key === 'Enter' && opts.input) {
+          e.preventDefault();
+          close(inputEl.value.trim());
+        }
+      }
+      cancel.addEventListener('click', function () { close(null); });
+      ok.addEventListener('click', function () {
+        close(opts.input ? inputEl.value.trim() : true);
+      });
+      backdrop.addEventListener('mousedown', function (e) {
+        if (e.target === backdrop) close(null);
+      });
+      document.addEventListener('keydown', onKey, true);
+      if (inputEl) {
+        inputEl.focus();
+        inputEl.select();
+      } else {
+        ok.focus();
+      }
+    });
+  }
+
+  function showHelp() {
+    openDialog({
+      title: '밍톡 사용법',
+      desc: '· Enter 로 전송, Shift+Enter 는 줄바꿈\n· 📎 로 사진 첨부 → 사진을 누르면 크게 보기\n· 메시지에 마우스를 올리면 ⋯ 메뉴 (복사·삭제)\n· 모바일에서는 메시지를 길게 눌러 메뉴 열기\n· 상단 🔍 로 대화 내용 검색, ▲▼ 로 이동\n· 방 메뉴(⋮)에서 이름 변경·고정·삭제\n· 왼쪽 아래 내보내기/가져오기로 JSON 백업\n\n모든 내용은 이 브라우저에만 저장돼요.',
+      confirmLabel: '확인'
+    });
+  }
+
+  /* ---------------------------------------------------------------
+     렌더링: 방 목록
+  --------------------------------------------------------------- */
+  function previewFor(room) {
+    if (!room.messages.length) return '메시지가 없어요 · 눌러서 시작하기';
+    var last = room.messages[room.messages.length - 1];
+    if (last.type === 'image') return '📷 사진';
+    return clip(last.text, 46);
+  }
+
+  function buildRoomItem(room) {
+    var item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'room' + (room.id === state.activeRoomId ? ' active' : '');
+    item.setAttribute('data-id', room.id);
+
+    var colors = avatarColors(room.name);
+    var av = document.createElement('div');
+    av.className = 'avatar';
+    av.style.background = colors[0];
+    av.style.color = colors[1];
+    av.textContent = room.name.charAt(0) || '방';
+
+    var main = document.createElement('div');
+    main.className = 'room-main';
+    var top = document.createElement('div');
+    top.className = 'room-top';
+
+    var nm = document.createElement('span');
+    nm.className = 'room-name';
+    nm.textContent = room.name;
+    top.appendChild(nm);
+
+    if (room.pinned) {
+      var pin = document.createElement('span');
+      pin.className = 'pin-tag';
+      pin.textContent = '고정';
+      top.appendChild(pin);
+    }
+
+    var timeEl = document.createElement('span');
+    timeEl.className = 'room-time';
+    timeEl.textContent = formatRoomTime(roomLastTs(room));
+    top.appendChild(timeEl);
+
+    var prev = document.createElement('div');
+    prev.className = 'room-preview';
+    prev.textContent = previewFor(room);
+
+    main.appendChild(top);
+    main.appendChild(prev);
+    item.appendChild(av);
+    item.appendChild(main);
+
+    if (query) {
+      highlightEl(nm, query);
+      highlightEl(prev, query);
+    }
+
+    item.addEventListener('click', function () { openRoom(room.id); });
+    return item;
+  }
+
+  function renderList() {
+    var listEl = $('roomList');
+    var q = query.trim().toLowerCase();
+    var rooms = sortedRooms();
+    var filtered = rooms.filter(function (r) {
+      if (!q) return true;
+      if (r.name.toLowerCase().indexOf(q) !== -1) return true;
+      return r.messages.some(function (m) {
+        return m.type === 'text' && m.text.toLowerCase().indexOf(q) !== -1;
+      });
+    });
+
+    listEl.innerHTML = '';
+    if (!filtered.length) {
+      var empty = document.createElement('div');
+      empty.className = 'list-empty';
+      empty.textContent = q ? '검색 결과가 없어요.' : '아직 방이 없어요.\n새 방을 만들어 보세요.';
+      listEl.appendChild(empty);
+    } else {
+      var frag = document.createDocumentFragment();
+      filtered.forEach(function (room) { frag.appendChild(buildRoomItem(room)); });
+      listEl.appendChild(frag);
+    }
+
+    var countEl = $('listCount');
+    if (countEl) {
+      countEl.textContent = q
+        ? filtered.length + '개 찾음'
+        : state.rooms.length + '개의 방';
+    }
+    renderShortcuts();
+  }
+
+  function renderShortcuts() {
+    var box = $('shortcutList');
+    if (!box) return;
+    var q = query.trim().toLowerCase();
+    box.innerHTML = '';
+    var rooms = sortedRooms().filter(function (r) {
+      return !q || r.name.toLowerCase().indexOf(q) !== -1;
+    });
+    if (!rooms.length) {
+      var empty = document.createElement('div');
+      empty.className = 'list-empty';
+      empty.style.padding = '18px 6px';
+      empty.textContent = '아직 방이 없어요.';
+      box.appendChild(empty);
+      return;
+    }
+    rooms.forEach(function (room) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'shortcut';
+      var dot = document.createElement('span');
+      dot.className = 'sc-dot';
+      dot.style.background = avatarColors(room.name)[0];
+      var nm = document.createElement('span');
+      nm.className = 'sc-name';
+      nm.textContent = room.name;
+      var ct = document.createElement('span');
+      ct.className = 'sc-count';
+      ct.textContent = room.messages.length ? room.messages.length + '개' : '비어 있음';
+      b.appendChild(dot);
+      b.appendChild(nm);
+      b.appendChild(ct);
+      b.addEventListener('click', function () { openRoom(room.id); });
+      box.appendChild(b);
+    });
+  }
+
+  /* ---------------------------------------------------------------
+     렌더링: 채팅
+  --------------------------------------------------------------- */
+  function buildMessageRow(m, showTime, withGap) {
+    var row = document.createElement('div');
+    row.className = 'msg-row' + (withGap ? ' gap' : '');
+    row.setAttribute('data-id', m.id);
+
+    var more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'msg-more';
+    more.textContent = '⋯';
+    more.title = '메시지 메뉴';
+    more.setAttribute('aria-label', '메시지 메뉴');
+
+    var timeEl = document.createElement('span');
+    timeEl.className = 'msg-time';
+    timeEl.textContent = showTime ? formatTime(m.ts) : '';
+
+    var bubble = document.createElement('div');
+    bubble.className = 'bubble' + (m.type === 'image' ? ' bubble-image' : '');
+    if (m.type === 'image' && m.src) {
+      var img = document.createElement('img');
+      img.src = m.src;
+      img.alt = '첨부한 사진';
+      img.addEventListener('click', function () { openLightbox(m.src); });
+      bubble.appendChild(img);
+    } else {
+      bubble.textContent = m.text;
+    }
+
+    row.appendChild(more);
+    row.appendChild(timeEl);
+    row.appendChild(bubble);
+    return row;
+  }
+
+  function renderChat(smooth) {
+    var room = currentRoom();
+    var msgsEl = $('messages');
+    var emptyEl = $('emptyChat');
+
+    if (!room) {
+      msgsEl.innerHTML = '';
+      msgsEl.hidden = true;
+      emptyEl.hidden = false;
+      $('composer').hidden = true;
+      $('chatTitle').textContent = '밍톡';
+      $('chatSub').textContent = '방을 골라 주세요';
+      $('chatSearchBar').hidden = true;
+      chatQuery = '';
+      hits = [];
+      hitIndex = -1;
+      updateSearchUI();
+      return;
+    }
+
+    msgsEl.hidden = false;
+    emptyEl.hidden = true;
+    $('composer').hidden = false;
+    $('chatTitle').textContent = room.name;
+    $('chatSub').textContent = '메시지 ' + room.messages.length + '개';
+
+    var frag = document.createDocumentFragment();
+    var prevDate = '';
+    var prevTs = 0;
+
+    if (room.messages.length) {
+      var spacer = document.createElement('div');
+      spacer.className = 'msg-spacer';
+      spacer.setAttribute('aria-hidden', 'true');
+      frag.appendChild(spacer);
+    }
+
+    if (!room.messages.length) {
+      var hint = document.createElement('div');
+      hint.className = 'chat-hint';
+      hint.textContent = '첫 메시지를 남겨 보세요 ✍️';
+      frag.appendChild(hint);
+    }
+
+    for (var i = 0; i < room.messages.length; i++) {
+      var m = room.messages[i];
+      var key = dateKey(m.ts);
+      if (key !== prevDate) {
+        var dateRow = document.createElement('div');
+        dateRow.className = 'date-row';
+        var pill = document.createElement('span');
+        pill.className = 'date-pill';
+        pill.textContent = dateLabel(m.ts);
+        dateRow.appendChild(pill);
+        frag.appendChild(dateRow);
+        prevDate = key;
+        prevTs = 0;
+      }
+      var next = room.messages[i + 1];
+      var showTime = !next || next.ts - m.ts >= 60000 || dateKey(next.ts) !== key;
+      var withGap = prevTs > 0 && (m.ts - prevTs >= 5 * 60000);
+      frag.appendChild(buildMessageRow(m, showTime, withGap));
+      prevTs = m.ts;
+    }
+
+    msgsEl.innerHTML = '';
+    msgsEl.appendChild(frag);
+
+    requestAnimationFrame(function () {
+      if (chatQuery) {
+        highlightEl(msgsEl, chatQuery);
+        hits = Array.prototype.slice.call(msgsEl.querySelectorAll('mark.hit'));
+        hitIndex = hits.length ? 0 : -1;
+        updateSearchUI();
+        if (hits.length) setActiveHit(0);
+      } else {
+        hits = [];
+        hitIndex = -1;
+        updateSearchUI();
+        scrollToBottom(!!smooth);
+      }
+    });
+  }
+
+  function scrollToBottom(smooth) {
+    var el = $('messages');
+    if (!el) return;
+    if (typeof el.scrollTo === 'function') {
+      el.scrollTo({ top: el.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+    } else {
+      el.scrollTop = el.scrollHeight;
+    }
+  }
+
+  /* ---------------------------------------------------------------
+     검색 하이라이트
+  --------------------------------------------------------------- */
+  function highlightEl(root, q) {
+    if (!q) return 0;
+    var needle = q.toLowerCase();
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+    var nodes = [];
+    var node;
+    while ((node = walker.nextNode())) nodes.push(node);
+
+    var count = 0;
+    nodes.forEach(function (n) {
+      var text = n.nodeValue || '';
+      var lower = text.toLowerCase();
+      var idx = lower.indexOf(needle);
+      if (idx === -1) return;
+      var frag = document.createDocumentFragment();
+      var pos = 0;
+      while (idx !== -1) {
+        if (idx > pos) frag.appendChild(document.createTextNode(text.slice(pos, idx)));
+        var mark = document.createElement('mark');
+        mark.className = 'hit';
+        mark.textContent = text.slice(idx, idx + needle.length);
+        frag.appendChild(mark);
+        count++;
+        pos = idx + needle.length;
+        idx = lower.indexOf(needle, pos);
+      }
+      if (pos < text.length) frag.appendChild(document.createTextNode(text.slice(pos)));
+      if (n.parentNode) n.parentNode.replaceChild(frag, n);
+    });
+    return count;
+  }
+
+  function setActiveHit(i) {
+    hits.forEach(function (h) { h.classList.remove('active'); });
+    var h = hits[i];
+    if (!h) return;
+    h.classList.add('active');
+    var row = h.closest ? h.closest('.msg-row') : null;
+    (row || h).scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+
+  function updateSearchUI() {
+    var c = $('chatSearchCount');
+    if (!c) return;
+    if (!chatQuery) {
+      c.textContent = '';
+      return;
+    }
+    if (!hits.length) {
+      c.textContent = '결과 없음';
+      return;
+    }
+    c.textContent = (hitIndex + 1) + '/' + hits.length;
+  }
+
+  function toggleSearch(open) {
+    var bar = $('chatSearchBar');
+    if (typeof open !== 'boolean') open = bar.hidden;
+    bar.hidden = !open;
+    if (open) {
+      $('chatSearchInput').value = chatQuery;
+      $('chatSearchInput').focus();
+      $('chatSearchInput').select();
+    } else {
+      chatQuery = '';
+      $('chatSearchInput').value = '';
+      renderChat();
+    }
+  }
+
+  function moveHit(dir) {
+    if (!hits.length) return;
+    hitIndex = (hitIndex + dir + hits.length) % hits.length;
+    setActiveHit(hitIndex);
+    updateSearchUI();
+  }
+
+  /* ---------------------------------------------------------------
+     동작: 방
+  --------------------------------------------------------------- */
+  function openRoom(id) {
+    var room = findRoom(id);
+    if (!room) return;
+    state.activeRoomId = id;
+    chatQuery = '';
+    $('chatSearchInput').value = '';
+    $('chatSearchBar').hidden = true;
+    $('app').classList.add('chat-open');
+    save();
+    renderList();
+    renderChat();
+    if (window.innerWidth > 768) {
+      $('input').focus();
+    } else {
+      $('input').blur();
+    }
+  }
+
+  function closeRoomView() {
+    $('app').classList.remove('chat-open');
+    $('input').blur();
+  }
+
+  function createRoom() {
+    openDialog({
+      title: '새 방 만들기',
+      desc: '혼자 쓰는 방이에요. 이름은 나중에 바꿀 수 있어요.',
+      input: true,
+      value: '',
+      placeholder: '예) 여행 준비, 아이디어, 11월 할 일',
+      confirmLabel: '만들기'
+    }).then(function (name) {
+      if (name === null) return;
+      var room = {
+        id: uid('r'),
+        name: (name || '새 방').slice(0, MAX_NAME),
+        pinned: false,
+        createdAt: Date.now(),
+        messages: []
+      };
+      state.rooms.push(room);
+      state.activeRoomId = room.id;
+      save();
+      renderList();
+      openRoom(room.id);
+      toast('「' + room.name + '」 방을 만들었어요');
+    });
+  }
+
+  function renameRoom() {
+    var room = currentRoom();
+    if (!room) return;
+    openDialog({
+      title: '방 이름 바꾸기',
+      input: true,
+      value: room.name,
+      placeholder: '방 이름',
+      confirmLabel: '저장'
+    }).then(function (name) {
+      if (name === null) return;
+      if (!name) {
+        toast('이름을 입력해 주세요');
+        return;
+      }
+      room.name = name.slice(0, MAX_NAME);
+      save();
+      renderList();
+      renderChat();
+      toast('이름을 바꿨어요');
+    });
+  }
+
+  function deleteRoom() {
+    var room = currentRoom();
+    if (!room) return;
+    openDialog({
+      title: '방을 삭제할까요?',
+      desc: '「' + room.name + '」의 메시지 ' + room.messages.length + '개가 함께 사라져요.\n삭제한 뒤에는 되돌릴 수 없어요.',
+      confirmLabel: '삭제',
+      danger: true
+    }).then(function (ok) {
+      if (!ok) return;
+      var idx = state.rooms.indexOf(room);
+      if (idx === -1) return;
+      state.rooms.splice(idx, 1);
+      if (state.activeRoomId === room.id) {
+        var next = state.rooms[Math.min(idx, state.rooms.length - 1)];
+        state.activeRoomId = next ? next.id : null;
+      }
+      save();
+      if (!state.rooms.length) closeRoomView();
+      renderList();
+      renderChat();
+      toast('방을 삭제했어요');
+    });
+  }
+
+  function togglePin() {
+    var room = currentRoom();
+    if (!room) return;
+    room.pinned = !room.pinned;
+    save();
+    renderList();
+    toast(room.pinned ? '위로 고정했어요' : '고정을 해제했어요');
+  }
+
+  function memoRoomFallback() {
+    var room = memoRoom();
+    if (!room) {
+      room = {
+        id: uid('r'),
+        name: '나와의 채팅 (메모)',
+        pinned: true,
+        createdAt: Date.now(),
+        messages: []
+      };
+      state.rooms.push(room);
+    }
+    return room;
+  }
+
+  function saveQuickMemo() {
+    var input = $('quickMemo');
+    var text = input.value.trim();
+    if (!text) {
+      input.focus();
+      return;
+    }
+    var room = memoRoomFallback();
+    room.messages.push({ id: uid('m'), type: 'text', text: text, src: '', ts: Date.now() });
+    input.value = '';
+    save();
+    renderList();
+    renderChat();
+    toast('메모에 저장했어요');
+  }
+
+  /* ---------------------------------------------------------------
+     동작: 메시지
+  --------------------------------------------------------------- */
+  function sendMessage() {
+    var input = $('input');
+    var text = input.value.replace(/\s+$/, '');
+    if (!text.trim()) return;
+    var room = currentRoom();
+    if (!room) {
+      toast('먼저 방을 골라 주세요');
+      return;
+    }
+    room.messages.push({ id: uid('m'), type: 'text', text: text, src: '', ts: Date.now() });
+    input.value = '';
+    autoGrow(input);
+    updateSendState();
+    save();
+    renderList();
+    renderChat(true);
+  }
+
+  function deleteMessage(id) {
+    var room = currentRoom();
+    if (!room) return;
+    var idx = -1;
+    for (var i = 0; i < room.messages.length; i++) {
+      if (room.messages[i].id === id) {
+        idx = i;
+        break;
+      }
+    }
+    if (idx === -1) return;
+    var roomId = room.id;
+    var removed = room.messages.splice(idx, 1)[0];
+    save();
+    renderList();
+    renderChat();
+    toast('메시지를 삭제했어요', '되돌리기', function () {
+      var r = findRoom(roomId);
+      if (!r) return;
+      r.messages.splice(Math.min(idx, r.messages.length), 0, removed);
+      save();
+      renderList();
+      renderChat();
+      toast('되돌렸어요');
+    });
+  }
+
+  function copyMessage(text) {
+    function done() { toast('복사했어요'); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () {
+        if (legacyCopy(text)) done();
+        else toast('복사하지 못했어요');
+      });
+    } else if (legacyCopy(text)) {
+      done();
+    } else {
+      toast('복사하지 못했어요');
+    }
+  }
+
+  function legacyCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    ta.style.top = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch (err) {
+      ok = false;
+    }
+    ta.remove();
+    return ok;
+  }
+
+  function singleUrl(text) {
+    var t = String(text || '').trim();
+    return /^https?:\/\/\S+$/.test(t) ? t : '';
+  }
+
+  function downloadImage(m) {
+    var a = document.createElement('a');
+    a.href = m.src;
+    var isPng = m.src.indexOf('data:image/png') === 0;
+    a.download = 'mingtalk-photo-' + m.ts + (isPng ? '.png' : '.jpg');
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    toast('사진을 저장했어요');
+  }
+
+  function messageMenu(id, x, y) {
+    var room = currentRoom();
+    if (!room) return;
+    var m = findMessage(room, id);
+    if (!m) return;
+    var items = [];
+    if (m.type === 'image') {
+      items.push({ label: '사진 크게 보기', onClick: function () { openLightbox(m.src); } });
+      items.push({ label: '사진 저장', onClick: function () { downloadImage(m); } });
+    } else {
+      items.push({ label: '복사', onClick: function () { copyMessage(m.text); } });
+      var url = singleUrl(m.text);
+      if (url) {
+        items.push({
+          label: '링크 열기',
+          onClick: function () { window.open(url, '_blank', 'noopener'); }
+        });
+      }
+    }
+    items.push({ separator: true });
+    items.push({ label: '삭제', danger: true, onClick: function () { deleteMessage(id); } });
+    showMenu(x, y, items);
+  }
+
+  function chatMenu(anchor) {
+    var room = currentRoom();
+    if (!room) return;
+    var rect = anchor.getBoundingClientRect();
+    showMenu(rect.right - 180, rect.bottom + 6, [
+      { label: '방 이름 바꾸기', onClick: renameRoom },
+      { label: room.pinned ? '고정 해제' : '위로 고정', onClick: togglePin },
+      { separator: true },
+      { label: '대화 내용 검색', onClick: function () { toggleSearch(true); } },
+      { label: '사용법 보기', onClick: showHelp },
+      { separator: true },
+      { label: '방 삭제', danger: true, onClick: deleteRoom }
+    ]);
+  }
+
+  /* ---------------------------------------------------------------
+     동작: 사진
+  --------------------------------------------------------------- */
+  function readAsDataUrl(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(String(reader.result)); };
+      reader.onerror = function () { reject(reader.error || new Error('read')); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function loadImage(src) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { reject(new Error('image')); };
+      img.src = src;
+    });
+  }
+
+  function drawToDataUrl(img, maxDim, quality) {
+    var w = img.naturalWidth || img.width;
+    var h = img.naturalHeight || img.height;
+    if (!w || !h) return '';
+    var scale = Math.min(1, maxDim / Math.max(w, h));
+    var cw = Math.max(1, Math.round(w * scale));
+    var ch = Math.max(1, Math.round(h * scale));
+    var canvas = document.createElement('canvas');
+    canvas.width = cw;
+    canvas.height = ch;
+    var ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, cw, ch);
+    ctx.drawImage(img, 0, 0, cw, ch);
+    try {
+      return canvas.toDataURL('image/jpeg', quality);
+    } catch (err) {
+      return '';
+    }
+  }
+
+  function compressImage(file) {
+    return readAsDataUrl(file).then(function (dataUrl) {
+      if (file.type === 'image/gif') return dataUrl;
+      if (dataUrl.length < 120000) return dataUrl;
+      return loadImage(dataUrl).then(function (img) {
+        var plans = [
+          { max: 1280, q: 0.82 },
+          { max: 1024, q: 0.72 },
+          { max: 820, q: 0.60 }
+        ];
+        var best = '';
+        for (var i = 0; i < plans.length; i++) {
+          var out = drawToDataUrl(img, plans[i].max, plans[i].q);
+          if (!out) break;
+          best = out;
+          if (out.length <= 300000) break;
+        }
+        if (!best) return dataUrl;
+        return best.length < dataUrl.length ? best : dataUrl;
+      }).catch(function () {
+        return dataUrl;
+      });
+    });
+  }
+
+  function handleFiles(files) {
+    var room = currentRoom();
+    if (!room) {
+      toast('먼저 방을 골라 주세요');
+      return;
+    }
+    var arr = Array.prototype.slice.call(files).filter(function (f) {
+      return f && f.type && f.type.indexOf('image/') === 0;
+    });
+    if (!arr.length) {
+      toast('이미지 파일만 첨부할 수 있어요');
+      return;
+    }
+    arr = arr.slice(0, 6);
+    var chain = Promise.resolve();
+    var added = 0;
+    arr.forEach(function (file) {
+      chain = chain.then(function () {
+        return compressImage(file).then(function (dataUrl) {
+          room.messages.push({
+            id: uid('m'),
+            type: 'image',
+            text: '',
+            src: dataUrl,
+            ts: Date.now() + added
+          });
+          added++;
+        }).catch(function () {});
+      });
+    });
+    chain.then(function () {
+      if (!added) {
+        toast('사진을 불러오지 못했어요');
+        return;
+      }
+      save();
+      renderList();
+      renderChat(true);
+      toast(added + '장의 사진을 첨부했어요');
+    });
+  }
+
+  function openLightbox(src) {
+    $('lightboxImg').src = src;
+    $('lightbox').hidden = false;
+  }
+  function closeLightbox() {
+    $('lightbox').hidden = true;
+    $('lightboxImg').removeAttribute('src');
+  }
+
+  /* ---------------------------------------------------------------
+     동작: 백업
+  --------------------------------------------------------------- */
+  function exportJson() {
+    if (!state.rooms.length) {
+      toast('내보낼 내용이 없어요');
+      return;
+    }
+    var payload = {
+      app: 'koko-talk',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      me: state.me,
+      activeRoomId: state.activeRoomId,
+      rooms: state.rooms
+    };
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'mingtalk-backup-' + stamp() + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    toast('백업 파일을 내려받았어요');
+  }
+
+  function importFile(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      var data;
+      try {
+        data = JSON.parse(String(reader.result));
+      } catch (err) {
+        toast('JSON 파일을 읽을 수 없어요');
+        return;
+      }
+      if (!data || typeof data !== 'object' || !Array.isArray(data.rooms)) {
+        toast('밍톡 백업 파일이 아니에요');
+        return;
+      }
+      openDialog({
+        title: '백업 가져오기',
+        desc: '지금 있는 방과 메시지가 모두 백업 파일 내용으로 바뀌어요.\n계속할까요?',
+        confirmLabel: '가져오기',
+        danger: true
+      }).then(function (ok) {
+        if (!ok) return;
+        state = normalize(data);
+        save();
+        renderList();
+        renderChat();
+        toast('백업을 가져왔어요 (방 ' + state.rooms.length + '개)');
+      });
+    };
+    reader.onerror = function () { toast('파일을 읽지 못했어요'); };
+    reader.readAsText(file);
+  }
+
+  /* ---------------------------------------------------------------
+     입력 도우미
+  --------------------------------------------------------------- */
+  function autoGrow(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }
+  function updateSendState() {
+    var btn = $('btnSend');
+    if (!btn) return;
+    btn.disabled = !$('input').value.trim();
+  }
+  function insertAtCursor(textarea, text) {
+    var start = textarea.selectionStart || 0;
+    var end = textarea.selectionEnd || 0;
+    var val = textarea.value;
+    textarea.value = val.slice(0, start) + text + val.slice(end);
+    var pos = start + text.length;
+    try {
+      textarea.selectionStart = pos;
+      textarea.selectionEnd = pos;
+    } catch (err) { /* noop */ }
+    textarea.focus();
+    autoGrow(textarea);
+  }
+
+  function buildEmojiPanel() {
+    var panel = $('emojiPanel');
+    EMOJIS.forEach(function (emo) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = emo;
+      b.setAttribute('aria-label', emo);
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        insertAtCursor($('input'), emo);
+        panel.hidden = true;
+        updateSendState();
+      });
+      panel.appendChild(b);
+    });
+  }
+
+  function setView(v) {
+    view = v;
+    $('roomsView').hidden = v !== 'rooms';
+    $('friendsView').hidden = v !== 'friends';
+    $('listTitle').textContent = v === 'rooms' ? '채팅' : '친구';
+    $('roomSearch').placeholder = v === 'rooms' ? '방 이름 · 대화 내용 검색' : '바로가기 검색';
+    var btns = document.querySelectorAll('[data-view]');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('active', btns[i].getAttribute('data-view') === v);
+    }
+    if (v === 'friends') renderShortcuts();
+    else renderList();
+  }
+
+  /* ---------------------------------------------------------------
+     이벤트 연결
+  --------------------------------------------------------------- */
+  function bindEvents() {
+    $('roomSearch').addEventListener('input', function () {
+      query = this.value;
+      if (view === 'rooms') renderList();
+      else renderShortcuts();
+    });
+
+    $('btnNewRoom').addEventListener('click', createRoom);
+    $('btnEmptyNew').addEventListener('click', createRoom);
+    $('btnHelp').addEventListener('click', showHelp);
+    $('railProfile').addEventListener('click', function () { setView('friends'); });
+
+    var viewBtns = document.querySelectorAll('[data-view]');
+    for (var i = 0; i < viewBtns.length; i++) {
+      (function (btn) {
+        btn.addEventListener('click', function () { setView(btn.getAttribute('data-view')); });
+      })(viewBtns[i]);
+    }
+
+    $('railExport').addEventListener('click', exportJson);
+    $('btnExport').addEventListener('click', exportJson);
+    $('btnExport2').addEventListener('click', exportJson);
+    $('btnImport').addEventListener('click', function () { $('importInput').click(); });
+    $('btnImport2').addEventListener('click', function () { $('importInput').click(); });
+    $('importInput').addEventListener('change', function (e) {
+      var f = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (f) importFile(f);
+    });
+
+    $('btnBack').addEventListener('click', closeRoomView);
+
+    $('btnChatSearch').addEventListener('click', function () {
+      if (!currentRoom()) {
+        toast('먼저 방을 골라 주세요');
+        return;
+      }
+      toggleSearch();
+    });
+    $('searchClose').addEventListener('click', function () { toggleSearch(false); });
+    $('searchPrev').addEventListener('click', function () { moveHit(-1); });
+    $('searchNext').addEventListener('click', function () { moveHit(1); });
+    $('chatSearchInput').addEventListener('input', function () {
+      chatQuery = this.value.trim();
+      renderChat();
+    });
+    $('chatSearchInput').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        moveHit(e.shiftKey ? -1 : 1);
+      }
+    });
+
+    $('btnChatMenu').addEventListener('click', function (e) {
+      e.stopPropagation();
+      chatMenu(this);
+    });
+
+    $('btnAttach').addEventListener('click', function () { $('fileInput').click(); });
+    $('fileInput').addEventListener('change', function (e) {
+      var files = Array.prototype.slice.call(e.target.files || []);
+      e.target.value = '';
+      if (files.length) handleFiles(files);
+    });
+
+    $('btnSend').addEventListener('click', sendMessage);
+    var input = $('input');
+    input.addEventListener('input', function () {
+      autoGrow(this);
+      updateSendState();
+    });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    $('btnEmoji').addEventListener('click', function (e) {
+      e.stopPropagation();
+      var panel = $('emojiPanel');
+      panel.hidden = !panel.hidden;
+    });
+    document.addEventListener('click', function (e) {
+      var panel = $('emojiPanel');
+      if (!panel.hidden && !panel.contains(e.target) && e.target !== $('btnEmoji')) {
+        panel.hidden = true;
+      }
+      if (menuEl && !menuEl.contains(e.target)) closeMenu();
+    });
+
+    $('messages').addEventListener('contextmenu', function (e) {
+      var row = e.target.closest ? e.target.closest('.msg-row') : null;
+      if (!row) return;
+      e.preventDefault();
+      messageMenu(row.getAttribute('data-id'), e.clientX, e.clientY);
+    });
+    $('messages').addEventListener('click', function (e) {
+      var btn = e.target.closest ? e.target.closest('.msg-more') : null;
+      if (!btn) return;
+      var row = btn.closest('.msg-row');
+      if (!row) return;
+      e.stopPropagation();
+      var rect = btn.getBoundingClientRect();
+      messageMenu(row.getAttribute('data-id'), rect.right - 150, rect.bottom + 4);
+    });
+    $('messages').addEventListener('scroll', closeMenu, { passive: true });
+
+    /* 모바일: 길게 누르면 메시지 메뉴 */
+    var pressTimer = null;
+    var pressStart = null;
+    $('messages').addEventListener('touchstart', function (e) {
+      var row = e.target.closest ? e.target.closest('.msg-row') : null;
+      if (!row || e.touches.length !== 1) return;
+      pressStart = { x: e.touches[0].clientX, y: e.touches[0].clientY, id: row.getAttribute('data-id') };
+      if (pressTimer) clearTimeout(pressTimer);
+      pressTimer = setTimeout(function () {
+        pressTimer = null;
+        if (!pressStart) return;
+        messageMenu(pressStart.id, pressStart.x, pressStart.y);
+        pressStart = null;
+      }, 480);
+    }, { passive: true });
+    $('messages').addEventListener('touchmove', function (e) {
+      if (!pressStart || !e.touches.length) return;
+      var dx = e.touches[0].clientX - pressStart.x;
+      var dy = e.touches[0].clientY - pressStart.y;
+      if (Math.sqrt(dx * dx + dy * dy) > 10) {
+        if (pressTimer) clearTimeout(pressTimer);
+        pressTimer = null;
+        pressStart = null;
+      }
+    }, { passive: true });
+    ['touchend', 'touchcancel'].forEach(function (type) {
+      $('messages').addEventListener(type, function () {
+        if (pressTimer) clearTimeout(pressTimer);
+        pressTimer = null;
+        pressStart = null;
+      }, { passive: true });
+    });
+
+    $('lightbox').addEventListener('click', closeLightbox);
+
+    $('quickSave').addEventListener('click', saveQuickMemo);
+    $('quickMemo').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.isComposing) {
+        e.preventDefault();
+        saveQuickMemo();
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        closeMenu();
+        if (!$('lightbox').hidden) closeLightbox();
+        $('emojiPanel').hidden = true;
+        if (!$('chatSearchBar').hidden) toggleSearch(false);
+      }
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setView('rooms');
+        $('roomSearch').focus();
+        $('roomSearch').select();
+      }
+    });
+
+    window.addEventListener('beforeunload', function () {
+      if (saveTimer) {
+        clearTimeout(saveTimer);
+        writeStore();
+      }
+    });
+  }
+
+  function init() {
+    buildEmojiPanel();
+    bindEvents();
+    if (!findRoom(state.activeRoomId) && state.rooms.length) {
+      state.activeRoomId = state.rooms[0].id;
+    }
+    setView('rooms');
+    renderList();
+    renderChat();
+    autoGrow($('input'));
+    updateSendState();
+    if (!canPersist) {
+      var note = document.querySelector('.foot-note');
+      if (note) note.textContent = '저장 안 됨';
+      setTimeout(function () {
+        toast('이 브라우저에선 자동 저장이 막혀 있어요. Chrome·Edge에서 열면 저장돼요.', '자세히', showHelp);
+      }, 700);
+    }
+    if (window.innerWidth > 768 && currentRoom()) {
+      $('app').classList.add('chat-open');
+    }
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
