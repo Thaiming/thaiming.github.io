@@ -1,5 +1,5 @@
 /* 주간 루틴 체크 - 오프라인 캐시 */
-var CACHE = 'weekly-routine-v2';
+var CACHE = 'weekly-routine-v3';
 var ASSETS = [
   './',
   './index.html',
@@ -10,7 +10,14 @@ var ASSETS = [
 
 self.addEventListener('install', function(e){
   e.waitUntil(
-    caches.open(CACHE).then(function(c){ return c.addAll(ASSETS); }).catch(function(){}).then(function(){
+    caches.open(CACHE).then(function(c){
+      /* 설치 시에는 항상 최신본을 받아 캐시한다 */
+      return Promise.all(ASSETS.map(function(url){
+        return fetch(new Request(url, { cache: 'reload' })).then(function(res){
+          if(res && res.ok) return c.put(url, res);
+        }).catch(function(){});
+      }));
+    }).catch(function(){}).then(function(){
       return self.skipWaiting();
     })
   );
@@ -34,11 +41,14 @@ self.addEventListener('fetch', function(e){
   try { url = new URL(req.url); } catch(err) { return; }
   if(url.origin !== self.location.origin) return;
 
-  /* 캐시 먼저 (빠른 오프라인), 뒤에서 조용히 최신본 갱신 */
+  var isDoc = (req.mode === 'navigate') || /\.html?$/.test(url.pathname);
+
+  /* 캐시 먼저 (빠른 오프라인), 문서는 뒤에서 최신본으로 조용히 갱신 */
   e.respondWith(
     caches.match(req, { ignoreSearch: true }).then(function(hit){
       if(hit){
-        fetch(req).then(function(res){
+        var update = fetch(req, isDoc ? { cache: 'no-store' } : {});
+        update.then(function(res){
           if(res && res.ok){
             caches.open(CACHE).then(function(c){ c.put(req, res.clone()); });
           }
