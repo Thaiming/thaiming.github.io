@@ -1,0 +1,29 @@
+{
+  "name": "주간 루틴 체크",
+  "short_name": "주간 루틴",
+  "description": "매일·요일별 생산 루틴을 한 주 단위로 체크하는 나만의 루틴표",
+  "lang": "ko",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "id": "/routine/",
+  "display": "standalone",
+  "display_override": ["standalone", "browser"],
+  "orientation": "portrait",
+  "background_color": "#FBF6F0",
+  "theme_color": "#FBF6F0",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
