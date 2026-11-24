@@ -243,7 +243,7 @@
   'use strict';
 
   var STORE_KEY = 'weekly-routine.v1';
-  var SCHEMA = 2;   /* 기본 루틴 스키마 버전. 올릴 때마다 DEFAULT_SEEDS 에 새 기본 항목을 넣는다 */
+  var SCHEMA = 3;   /* 기본 루틴 스키마 버전. 올릴 때마다 DEFAULT_SEEDS 에 새 기본 항목을 넣거나 아래 migrate 에 교정 단계를 더한다 */
   var DAY_SHORT = ['월','화','수','목','금','토','일'];
   var DAY_FULL  = ['월요일','화요일','수요일','목요일','금요일','토요일','일요일'];
   var ALL = [0,1,2,3,4,5,6];
@@ -251,7 +251,7 @@
   var DEFAULT_TEMPLATES = [
     {id:'music',        emoji:'🎵', title:'일레븐 뮤직 5곡 제작',        sub:'무소유 레코드용', days:ALL.slice(), type:'counter', target:5},
     {id:'outlier',      emoji:'💼', title:'17:00 아웃라이어 부업',       sub:'Outlier · 1~2시간', days:ALL.slice(), type:'check'},
-    {id:'drama',        emoji:'🎬', title:'소아와 두부 숏드라마 제작',   sub:'남는 시간',       days:ALL.slice(), type:'check'},
+    {id:'drama',        emoji:'🎬', title:'소이와 두부 숏드라마 제작',   sub:'남는 시간',       days:ALL.slice(), type:'check'},
     {id:'blog',         emoji:'✍️', title:'네이버 블로그 1포스팅',       sub:'최소 1포스팅 · 월드밍의 모험', days:ALL.slice(), type:'check'},
     {id:'mon-insta',    emoji:'📸', title:'참깨 인스타 카드뉴스 업로드', sub:'일주일 치',       days:[0], type:'check'},
     {id:'tue-shorts',   emoji:'🥗', title:'뾰로롱 건강 쇼츠 업로드',     sub:'',               days:[1], type:'check'},
@@ -333,7 +333,17 @@
     return true;
   }
 
-  /* 스키마 이전: 체크 기록(weeks)은 그대로 두고, 빠진 기본 항목만 보탠다 */
+  /* 스키마 3: '소아와 두부' → '소이와 두부'. 손으로 이미 고친 이름은 그대로 둔다 */
+  function fixDramaName(s){
+    for(var i=0;i<s.templates.length;i++){
+      var t = s.templates[i];
+      if(t && t.id==='drama' && t.title==='소아와 두부 숏드라마 제작'){
+        t.title = '소이와 두부 숏드라마 제작';
+      }
+    }
+  }
+
+  /* 스키마 이전: 체크 기록(weeks)은 그대로 두고, 빠진 기본 항목을 보태고 이름을 바로잡는다 */
   function migrate(s){
     var from = s.v || 1;
     if(from >= SCHEMA) return false;
@@ -342,6 +352,7 @@
       for(var i=0;i<seeds.length;i++){
         insertSeed(s.templates, seeds[i].tpl, seeds[i].after || null);
       }
+      if(ver === 3) fixDramaName(s);
     }
     s.v = SCHEMA;
     return true;
