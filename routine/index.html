@@ -243,6 +243,7 @@
   'use strict';
 
   var STORE_KEY = 'weekly-routine.v1';
+  var SCHEMA = 2;   /* 기본 루틴 스키마 버전. 올릴 때마다 DEFAULT_SEEDS 에 새 기본 항목을 넣는다 */
   var DAY_SHORT = ['월','화','수','목','금','토','일'];
   var DAY_FULL  = ['월요일','화요일','수요일','목요일','금요일','토요일','일요일'];
   var ALL = [0,1,2,3,4,5,6];
@@ -251,6 +252,7 @@
     {id:'music',        emoji:'🎵', title:'일레븐 뮤직 5곡 제작',        sub:'무소유 레코드용', days:ALL.slice(), type:'counter', target:5},
     {id:'outlier',      emoji:'💼', title:'17:00 아웃라이어 부업',       sub:'Outlier · 1~2시간', days:ALL.slice(), type:'check'},
     {id:'drama',        emoji:'🎬', title:'소아와 두부 숏드라마 제작',   sub:'남는 시간',       days:ALL.slice(), type:'check'},
+    {id:'blog',         emoji:'✍️', title:'네이버 블로그 1포스팅',       sub:'최소 1포스팅 · 월드밍의 모험', days:ALL.slice(), type:'check'},
     {id:'mon-insta',    emoji:'📸', title:'참깨 인스타 카드뉴스 업로드', sub:'일주일 치',       days:[0], type:'check'},
     {id:'tue-shorts',   emoji:'🥗', title:'뾰로롱 건강 쇼츠 업로드',     sub:'',               days:[1], type:'check'},
     {id:'wed-youtube',  emoji:'🧘', title:'무소유 레코드 유튜브 업로드', sub:'',               days:[2], type:'check'},
@@ -259,6 +261,12 @@
     {id:'sat-shorts',   emoji:'🥗', title:'뾰로롱 건강 쇼츠 업로드',     sub:'',               days:[5], type:'check'},
     {id:'sun-youtube',  emoji:'🧘', title:'무소유 레코드 유튜브 업로드', sub:'',               days:[6], type:'check'}
   ];
+
+  /* 이미 저장된(구버전) 사용자에게도 새 기본 항목이 빠짐없이 들어가도록 하는 이전 단계 목록.
+     버전 -> 새로 넣을 기본 항목. after: 그 항목 뒤에 끼워 넣기(없으면 맨 끝). */
+  var DEFAULT_SEEDS = {
+    2: [ {after:'drama', tpl:{id:'blog', emoji:'✍️', title:'네이버 블로그 1포스팅', sub:'최소 1포스팅 · 월드밍의 모험', days:[0,1,2,3,4,5,6], type:'check'}} ]
+  };
 
   /* ---------- date utils ---------- */
   function pad(n){ return (n<10?'0':'')+n; }
@@ -310,21 +318,53 @@
         counts: (w.counts && typeof w.counts==='object') ? w.counts : {}
       };
     });
-    return { v:1, templates: templates, weeks: weeks };
+    return { v: Math.max(1, parseInt(p.v, 10) || 1), templates: templates, weeks: weeks };
   }
+
+  /* 기존 templates 에 없으면 seed 를 끼워 넣는다. 이미 있으면 건드리지 않음 */
+  function insertSeed(list, seed, afterId){
+    for(var i=0;i<list.length;i++){ if(list[i].id === seed.id) return false; }
+    var copy = clone(seed);
+    delete copy.after;
+    if(afterId){
+      for(var j=0;j<list.length;j++){ if(list[j].id === afterId){ list.splice(j+1, 0, copy); return true; } }
+    }
+    list.push(copy);
+    return true;
+  }
+
+  /* 스키마 이전: 체크 기록(weeks)은 그대로 두고, 빠진 기본 항목만 보탠다 */
+  function migrate(s){
+    var from = s.v || 1;
+    if(from >= SCHEMA) return false;
+    for(var ver=from+1; ver<=SCHEMA; ver++){
+      var seeds = DEFAULT_SEEDS[ver] || [];
+      for(var i=0;i<seeds.length;i++){
+        insertSeed(s.templates, seeds[i].tpl, seeds[i].after || null);
+      }
+    }
+    s.v = SCHEMA;
+    return true;
+  }
+
+  var NEEDS_SAVE = false;   /* 불러온 직후 이전(migration)이 일어났는지 */
 
   function loadState(){
     try{
       var raw = localStorage.getItem(STORE_KEY);
       if(raw){
         var s = normalize(JSON.parse(raw));
-        if(s) return s;
+        if(s){
+          if(migrate(s)) NEEDS_SAVE = true;
+          return s;
+        }
       }
     }catch(e){ /* 손상된 저장값은 무시하고 새로 시작 */ }
-    return { v:1, templates: clone(DEFAULT_TEMPLATES), weeks:{} };
+    return { v:SCHEMA, templates: clone(DEFAULT_TEMPLATES), weeks:{} };
   }
 
   var state = loadState();
+  if(NEEDS_SAVE) save();   /* 이전 결과를 바로 저장해 두 번 돌지 않게 */
   var view = { anchor: mondayOf(new Date()), openDays: {} };
 
   function save(){
