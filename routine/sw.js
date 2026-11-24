@@ -1,5 +1,5 @@
 /* 주간 루틴 체크 - 오프라인 캐시 */
-var CACHE = 'weekly-routine-v1';
+var CACHE = 'weekly-routine-v2';
 var ASSETS = [
   './',
   './index.html',

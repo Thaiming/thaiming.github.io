@@ -104,7 +104,7 @@
   .task.checked{background:#FCFAF7}
   .check{
     position:relative;flex:0 0 auto;width:28px;height:28px;margin-top:1px;
-    border-radius:10px;border:2px solid #DED1C4;background:#fff;
+    border-radius:10px;border:2px solid #D9C8B8;background:#fff;
     display:grid;place-items:center;color:transparent;font-size:14px;font-weight:900;line-height:1;
     transition:background .15s,border-color .15s,transform .1s;
   }
@@ -249,7 +249,7 @@
 
   var DEFAULT_TEMPLATES = [
     {id:'music',        emoji:'🎵', title:'일레븐 뮤직 5곡 제작',        sub:'무소유 레코드용', days:ALL.slice(), type:'counter', target:5},
-    {id:'outlier',      emoji:'💼', title:'17:00 아웃라이어 부업',       sub:'1~2시간',        days:ALL.slice(), type:'check'},
+    {id:'outlier',      emoji:'💼', title:'17:00 아웃라이어 부업',       sub:'Outlier · 1~2시간', days:ALL.slice(), type:'check'},
     {id:'drama',        emoji:'🎬', title:'소아와 두부 숏드라마 제작',   sub:'남는 시간',       days:ALL.slice(), type:'check'},
     {id:'mon-insta',    emoji:'📸', title:'참깨 인스타 카드뉴스 업로드', sub:'일주일 치',       days:[0], type:'check'},
     {id:'tue-shorts',   emoji:'🥗', title:'뾰로롱 건강 쇼츠 업로드',     sub:'',               days:[1], type:'check'},
@@ -421,7 +421,7 @@
 
     var mon = anchor, sun = addDays(anchor, 6);
     var yearPrefix = (wk.year === today.getFullYear()) ? '' : wk.year+'.';
-    var rangeText = yearPrefix + (mon.getMonth()+1)+'월 '+mon.getDate()+'일 – '+(sun.getMonth()+1)+'월 '+sun.getDate()+'일 · '+wk.week+'주차';
+    var rangeText = yearPrefix + (mon.getMonth()+1)+'.'+mon.getDate()+' – '+(sun.getMonth()+1)+'.'+sun.getDate()+' · '+wk.week+'주차';
 
     var offsetLabel = offset===0 ? '이번 주'
       : offset===-1 ? '지난주'
