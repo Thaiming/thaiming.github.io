@@ -18,6 +18,7 @@
 | 나레이션 | MP3/WAV/M4A 업로드 → 전체 타임라인 재생/일시정지 미리보기, 볼륨 조절 |
 | 저장 | 브라우저 자동 저장(localStorage + IndexedDB), 프로젝트 JSON 내보내기/불러오기 |
 | 내보내기 | 1080×1920 30fps 영상(MediaRecorder: MP4 우선, 미지원 시 WebM) + 오디오 합성, 진행률 표시. 컷별 PNG 저장 |
+| 폰트 | Noto Sans KR 400/700/900 woff2를 저장소에 직접 넣어 씀(`fonts/`) — 오프라인·저속 환경에서도 같은 글씨 |
 
 ## 사용 순서
 
@@ -32,6 +33,12 @@
 - `index.html` — 화면
 - `styles.css` — 스타일
 - `app.js` — 캔버스 렌더링·재생·녹화·저장 로직
+- `fonts/` — Noto Sans KR 400/700/900 woff2 (SIL Open Font License, `fonts/OFL.txt`)
+
+## 수정할 때
+
+- 파일을 고친 뒤에는 `index.html` 끝부분의 `styles.css?v=N`, `app.js?v=N` 숫자를 하나 올려 주세요. 페이지 캐시(10분) 때문에 휴대폰에서 예전 화면이 보일 수 있습니다.
+- 영상 형식은 화면에서 **자동 / MP4 / WebM** 중 고를 수 있습니다. 기본은 MP4(H.264)입니다.
 
 ## 참고
 

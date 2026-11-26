@@ -820,45 +820,52 @@ function moveCut(i, dir) {
   syncAll(); scheduleSave();
 }
 
-/* 여러 이미지를 현재 컷부터 차례로 채움 */
+/* 여러 이미지를 현재 컷부터 차례로 채움 (여러 장이면 엔딩은 건너뛰고 본문 컷을 만든다) */
 async function applyImages(files) {
-  let base = currentCut() || state.cuts[0];
+  const imgs = files.filter((f) => f.type.startsWith('image/'));
+  if (!imgs.length) return;
+  const base = currentCut() || state.cuts[0];
   if (!base) return;
   let idx = state.cuts.indexOf(base);
+  const bulk = imgs.length > 1;
   let added = 0, applied = 0;
-  const imgs = files.filter((f) => f.type.startsWith('image/'));
+
+  const addBodyAt = (pos) => {
+    state.cuts.splice(pos, 0, newCut('body'));
+    added++;
+  };
 
   for (let fi = 0; fi < imgs.length; fi++) {
-    const file = imgs[fi];
+    if (bulk) {
+      if (idx >= state.cuts.length) {
+        const last = state.cuts[state.cuts.length - 1];
+        addBodyAt(last && last.type === 'ending' ? state.cuts.length - 1 : state.cuts.length);
+      } else if (state.cuts[idx].type === 'ending') {
+        addBodyAt(idx);
+      }
+    }
+    const target = state.cuts[idx];
+    if (!target) break;
+
     try {
-      const prepared = await prepareImageFile(file);
+      const prepared = await prepareImageFile(imgs[fi]);
       const key = uid();
       assets.set(key, { dataUrl: prepared.dataUrl, img: prepared.img, blob: prepared.blob, name: prepared.name });
       savedAssets.delete(key);
 
-      const target = state.cuts[idx];
-      if (!target) break;
       const oldKey = target.imgKey;
       target.imgKey = key;
       applied++;
       if (oldKey && !state.cuts.some((c) => c.imgKey === oldKey)) {
         assets.delete(oldKey); savedAssets.delete(oldKey); idbDel(oldKey);
       }
-
-      idx++;
-      // 아직 넣을 이미지가 남았는데 컷이 모자라면 본문 컷 추가 (엔딩 앞)
-      if (idx >= state.cuts.length && fi < imgs.length - 1) {
-        const nc = newCut('body');
-        const lastCut = state.cuts[state.cuts.length - 1];
-        if (lastCut && lastCut.type === 'ending') state.cuts.splice(state.cuts.length - 1, 0, nc);
-        else state.cuts.push(nc);
-        added++;
-      }
     } catch (e) {
       console.warn(e);
-      toast(`이미지 1장을 읽지 못했습니다: ${file.name}`);
+      toast(`이미지 1장을 읽지 못했습니다: ${imgs[fi].name}`);
     }
+    idx++;
   }
+
   if (!applied) return;
   selectedId = state.cuts[Math.min(idx - 1, state.cuts.length - 1)].id;
   syncAll(); scheduleSave();
