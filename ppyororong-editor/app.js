@@ -1239,27 +1239,111 @@ function cleanupExport(job) {
   updateTransport();
 }
 
+/* ---- ZIP (무압축) : 전체 컷 PNG를 한 파일로 ---- */
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(buf) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function zipStore(entries) {
+  const enc = new TextEncoder();
+  const parts = [], central = [];
+  let offset = 0;
+  const d = new Date();
+  const time = ((d.getHours() & 31) << 11) | ((d.getMinutes() & 63) << 5) | ((Math.floor(d.getSeconds() / 2)) & 31);
+  const date = (((d.getFullYear() - 1980) & 127) << 9) | (((d.getMonth() + 1) & 15) << 5) | (d.getDate() & 31);
+
+  for (const e of entries) {
+    const name = enc.encode(e.name);
+    const data = e.data;
+    const crc = crc32(data);
+
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true);
+    lh.setUint16(4, 20, true);
+    lh.setUint16(6, 0x0800, true);   // UTF-8 파일명
+    lh.setUint16(8, 0, true);        // store
+    lh.setUint16(10, time, true);
+    lh.setUint16(12, date, true);
+    lh.setUint32(14, crc, true);
+    lh.setUint32(18, data.length, true);
+    lh.setUint32(22, data.length, true);
+    lh.setUint16(26, name.length, true);
+    lh.setUint16(28, 0, true);
+    parts.push(new Uint8Array(lh.buffer), name, data);
+
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true);
+    ch.setUint16(4, 20, true);
+    ch.setUint16(6, 20, true);
+    ch.setUint16(8, 0x0800, true);
+    ch.setUint16(10, 0, true);
+    ch.setUint16(12, time, true);
+    ch.setUint16(14, date, true);
+    ch.setUint32(16, crc, true);
+    ch.setUint32(20, data.length, true);
+    ch.setUint32(24, data.length, true);
+    ch.setUint16(28, name.length, true);
+    ch.setUint32(42, offset, true);
+    central.push(new Uint8Array(ch.buffer), name);
+
+    offset += 30 + name.length + data.length;
+  }
+
+  let cdSize = 0;
+  central.forEach((p) => { cdSize += p.length; });
+  const eocd = new DataView(new ArrayBuffer(22));
+  eocd.setUint32(0, 0x06054b50, true);
+  eocd.setUint16(8, entries.length, true);
+  eocd.setUint16(10, entries.length, true);
+  eocd.setUint32(12, cdSize, true);
+  eocd.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, new Uint8Array(eocd.buffer)], { type: 'application/zip' });
+}
+
 /* PNG 저장 */
 async function exportPNG(all) {
   await ensureFonts();
   if (!state.cuts.length) return;
-  const items = all
-    ? state.cuts.map((c, i) => ({ cut: c, i }))
-    : [{ cut: currentCut() || state.cuts[0], i: Math.max(0, currentIndex()) }];
 
-  if (all) toast(`PNG ${items.length}장을 저장합니다. 브라우저가 여러 파일 저장을 물으면 허용해 주세요.`, 4000);
-
-  for (const { cut, i } of items) {
-    const start = startTime(i);
-    render(start + 0.001, { preview: false });
+  if (!all) {
+    const i = Math.max(0, currentIndex());
+    render(startTime(i) + 0.001, { preview: false });
     const blob = await new Promise((res) => cv.toBlob(res, 'image/png'));
     if (!blob) { toast('PNG 변환 실패'); return; }
-    const d = cutDuration(cut);
-    download(blob, `뾰로롱_컷${String(i + 1).padStart(2, '0')}_${d.toFixed(1)}s.png`);
-    await sleep(all ? 380 : 60);
+    download(blob, `뾰로롱_컷${String(i + 1).padStart(2, '0')}_${cutDuration(state.cuts[i]).toFixed(1)}s.png`);
+    render(playhead);
+    toast('PNG를 저장했습니다');
+    return;
+  }
+
+  // 전체 컷 → ZIP 하나로 묶어서 저장 (브라우저의 다중 다운로드 차단 회피)
+  toast(`PNG ${state.cuts.length}장을 만드는 중…`, 5000);
+  const entries = [];
+  for (let i = 0; i < state.cuts.length; i++) {
+    render(startTime(i) + 0.001, { preview: false });
+    const blob = await new Promise((res) => cv.toBlob(res, 'image/png'));
+    if (!blob) continue;
+    entries.push({
+      name: `뾰로롱_컷${String(i + 1).padStart(2, '0')}_${cutDuration(state.cuts[i]).toFixed(1)}s.png`,
+      data: new Uint8Array(await blob.arrayBuffer()),
+    });
+    await sleep(20);
   }
   render(playhead);
-  if (!all) toast('PNG를 저장했습니다');
+  if (!entries.length) { toast('PNG 변환 실패'); return; }
+  const zip = zipStore(entries);
+  download(zip, `뾰로롱_컷이미지_${stamp()}.zip`);
+  toast(`PNG ${entries.length}장을 ZIP으로 저장했습니다 (${(zip.size / 1048576).toFixed(1)}MB)`, 4000);
 }
 
 /* =========================================================
