@@ -984,7 +984,7 @@ function syncSettingsUI() {
 }
 
 async function boot() {
-  await ensureFonts();
+  /* 1) 구조는 동기(localStorage)로 먼저 복원해 화면을 바로 그린다 */
   let loaded = false;
   try {
     const raw = localStorage.getItem(LS_KEY);
@@ -996,37 +996,53 @@ async function boot() {
         audioMeta = p.audio && p.audio.key
           ? { name: p.audio.name || 'audio', key: p.audio.key, duration: num(p.audio.duration, 0), bytes: num(p.audio.bytes, 0) }
           : { name: '', key: null, duration: 0, bytes: 0 };
-
-        for (const cut of state.cuts) {
-          if (!cut.imgKey) continue;
-          if (assets.has(cut.imgKey)) continue;
-          const blob = await idbGet(cut.imgKey);
-          if (blob) {
-            const dataUrl = await blobToDataURL(blob);
-            const img = await loadImage(dataUrl);
-            assets.set(cut.imgKey, { dataUrl, img, blob, name: '' });
-            savedAssets.add(cut.imgKey);
-          } else {
-            cut.imgKey = null;
-          }
-        }
-        if (audioMeta.key) {
-          const blob = await idbGet(audioMeta.key);
-          if (blob) { await loadAudioBlob(blob, audioMeta.name); savedAssets.add(audioMeta.key); }
-          else audioMeta = { name: '', key: null, duration: 0, bytes: 0 };
-        }
         loaded = true;
       }
     }
   } catch (e) {
     console.warn('복원 실패', e);
   }
-
   if (!loaded) state = defaultProject();
+
   syncSettingsUI();
   selectedId = state.cuts[0] ? state.cuts[0].id : null;
   syncAll();
   updateAudioInfo();
+  setSaveStatus(loaded ? '이미지 불러오는 중…' : '새 프로젝트');
+
+  /* 2) 폰트·이미지·오디오는 비동기로 이어서 */
+  await ensureFonts();
+  render(playhead);
+
+  if (loaded) {
+    for (const cut of state.cuts) {
+      if (!cut.imgKey) continue;
+      if (assets.has(cut.imgKey)) continue;
+      const blob = await idbGet(cut.imgKey);
+      if (blob) {
+        try {
+          const dataUrl = await blobToDataURL(blob);
+          const img = await loadImage(dataUrl);
+          assets.set(cut.imgKey, { dataUrl, img, blob, name: '' });
+          savedAssets.add(cut.imgKey);
+        } catch (e) { console.warn('이미지 복원', e); cut.imgKey = null; }
+      } else {
+        cut.imgKey = null;
+      }
+    }
+    if (audioMeta.key) {
+      const blob = await idbGet(audioMeta.key);
+      if (blob) {
+        try { await loadAudioBlob(blob, audioMeta.name); savedAssets.add(audioMeta.key); }
+        catch (e) { console.warn('오디오 복원', e); audioMeta = { name: '', key: null, duration: 0, bytes: 0 }; }
+      } else {
+        audioMeta = { name: '', key: null, duration: 0, bytes: 0 };
+      }
+    }
+    syncAll();
+    updateAudioInfo();
+  }
+
   setSaveStatus(loaded ? '이전 작업 복원됨' : '새 프로젝트');
   if (loaded) toast('이전 작업을 불러왔습니다');
 }
@@ -1559,4 +1575,4 @@ function bindEvents() {
 
 /* ---------------- 시작 ---------------- */
 bindEvents();
-boot();
+boot().catch((e) => { console.error('boot', e); try { toast('시작 중 오류: ' + e.message, 6000); } catch (_) {} });
