@@ -80,7 +80,7 @@ function newCut(type, duration) {
 function defaultProject() {
   return {
     version: 1,
-    settings: { safeZone: true, bodyScrim: true, volume: 1 },
+    settings: { safeZone: true, bodyScrim: true, volume: 1, format: 'auto' },
     cuts: [newCut('intro', 3), newCut('body', 3), newCut('ending', 2.5)],
   };
 }
@@ -461,26 +461,50 @@ function drawSafeZone(c) {
 }
 
 /* 전체 프레임 그리기. preview=false → 가이드/placeholder 없이 저장용 */
-function render(t, opts = {}) {
-  const preview = opts.preview !== false;
-  ctx.save();
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, CW, CH);
+function paintFrame(c, t, preview) {
+  c.save();
+  c.fillStyle = '#000';
+  c.fillRect(0, 0, CW, CH);
 
   const found = cutAt(t);
   if (found) {
     const { cut, index } = found;
     const asset = cut.imgKey ? assets.get(cut.imgKey) : null;
-    if (asset && asset.img) drawCover(ctx, asset.img, cut);
-    else drawEmptyImage(ctx, index, preview);
+    if (asset && asset.img) drawCover(c, asset.img, cut);
+    else drawEmptyImage(c, index, preview);
 
-    if (cut.type === 'intro') drawIntro(ctx, cut, preview);
-    else if (cut.type === 'ending') drawEnding(ctx, cut, preview);
-    else drawBody(ctx, cut, preview);
+    if (cut.type === 'intro') drawIntro(c, cut, preview);
+    else if (cut.type === 'ending') drawEnding(c, cut, preview);
+    else drawBody(c, cut, preview);
   }
 
-  if (preview && state.settings.safeZone) drawSafeZone(ctx);
-  ctx.restore();
+  if (preview && state.settings.safeZone) drawSafeZone(c);
+  c.restore();
+}
+
+function render(t, opts = {}) {
+  paintFrame(ctx, t, opts.preview !== false);
+}
+
+/* 내보내기용: 컷별로 한 번만 그려 두고 복사만 한다 (느린 기기에서도 30fps 유지) */
+let renderVersion = 1;
+const frameCache = {
+  canvas: document.createElement('canvas'),
+  ctx: null, cutIdx: -1, ver: -1,
+};
+frameCache.canvas.width = CW;
+frameCache.canvas.height = CH;
+frameCache.ctx = frameCache.canvas.getContext('2d', { alpha: false });
+
+function renderForExport(t) {
+  const found = cutAt(t);
+  if (!found) { ctx.fillStyle = '#000'; ctx.fillRect(0, 0, CW, CH); return; }
+  if (frameCache.cutIdx !== found.index || frameCache.ver !== renderVersion) {
+    paintFrame(frameCache.ctx, found.start + 0.001, false);
+    frameCache.cutIdx = found.index;
+    frameCache.ver = renderVersion;
+  }
+  ctx.drawImage(frameCache.canvas, 0, 0);
 }
 
 /* =========================================================
@@ -846,6 +870,7 @@ async function applyImages(files) {
    ========================================================= */
 let saveTimer = 0;
 function scheduleSave() {
+  renderVersion++;
   clearTimeout(saveTimer);
   setSaveStatus('저장 중…');
   saveTimer = setTimeout(() => { saveNow(); }, 650);
@@ -948,6 +973,7 @@ function syncSettingsUI() {
   $('#bodyScrim').checked = !!state.settings.bodyScrim;
   $('#volume').value = String(Math.round(clamp(num(state.settings.volume, 1), 0, 1) * 100));
   $('#volVal').textContent = $('#volume').value + '%';
+  $('#exportFormat').value = state.settings.format || 'auto';
 }
 
 async function boot() {
@@ -1044,16 +1070,19 @@ async function applyAudioFile(file) {
 /* =========================================================
    내보내기
    ========================================================= */
-function pickMime() {
+function pickMime(format) {
   if (typeof MediaRecorder === 'undefined') return '';
-  const cands = [
+  const mp4 = [
     'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
     'video/mp4;codecs=avc1',
     'video/mp4',
+  ];
+  const webm = [
     'video/webm;codecs=vp9,opus',
     'video/webm;codecs=vp8,opus',
     'video/webm',
   ];
+  const cands = format === 'mp4' ? mp4 : format === 'webm' ? webm : [...mp4, ...webm];
   for (const c of cands) {
     try { if (MediaRecorder.isTypeSupported(c)) return c; } catch (e) {}
   }
@@ -1061,6 +1090,11 @@ function pickMime() {
 }
 
 let exportJob = null;
+
+function exportFormat() {
+  const el = $('#exportFormat');
+  return el ? el.value : 'auto';
+}
 
 function showProgress(ratio, label) {
   $('#progressWrap').classList.remove('hidden');
@@ -1111,7 +1145,7 @@ async function exportVideo() {
     dest.stream.getAudioTracks().forEach((t) => tracks.push(t));
   }
 
-  const mime = pickMime();
+  const mime = pickMime(exportFormat());
   const stream = new MediaStream(tracks);
   const options = { videoBitsPerSecond: 12000000, audioBitsPerSecond: 128000 };
   if (mime) options.mimeType = mime;
@@ -1136,7 +1170,8 @@ async function exportVideo() {
   setExportUI(true);
   $('#btnExportVideo').disabled = false;
   showProgress(0, '준비 중…');
-  render(0, { preview: false });
+  frameCache.cutIdx = -1; frameCache.ver = -1;
+  renderForExport(0);
   setSaveStatus('녹화 중… 탭을 닫지 마세요');
   await sleep(200);
 
@@ -1153,7 +1188,7 @@ async function exportVideo() {
   };
 
   const finish = () => {
-    render(Math.max(0, total - 0.05), { preview: false });
+    renderForExport(Math.max(0, total - 0.05));
     showProgress(1, '마무리 중…');
     rec.onstop = () => {
       const type = rec.mimeType || mime || 'video/webm';
@@ -1165,7 +1200,9 @@ async function exportVideo() {
         toast('녹화된 데이터가 없습니다. 다시 시도해 주세요.', 4000);
       } else {
         download(blob, `뾰로롱_${stamp()}.${ext}`);
-        toast(`저장 완료 · ${ext.toUpperCase()} ${(blob.size / 1048576).toFixed(1)}MB`, 4000);
+        const want = exportFormat();
+        const note = (want === 'mp4' && ext !== 'mp4') ? ' (MP4 미지원 → WebM)' : '';
+        toast(`저장 완료 · ${ext.toUpperCase()} ${(blob.size / 1048576).toFixed(1)}MB${note}`, 4000);
         setSaveStatus(`영상 저장 완료 (${ext.toUpperCase()})`);
       }
       cleanupTracks();
@@ -1180,7 +1217,7 @@ async function exportVideo() {
     if (job.cancel) { finish(); return; }
     const t = acx.currentTime - t0;
     if (t >= total) { finish(); return; }
-    render(Math.max(0, t), { preview: false });
+    renderForExport(Math.max(0, t));
     showProgress(t / total, `${t.toFixed(1)}s / ${total.toFixed(1)}s · ${Math.round((t / total) * 100)}%`);
     job.raf = requestAnimationFrame(tick);
   };
@@ -1365,6 +1402,10 @@ function bindEvents() {
   });
 
   // 내보내기
+  $('#exportFormat').addEventListener('change', (ev) => {
+    state.settings.format = ev.target.value;
+    scheduleSave();
+  });
   $('#btnExportVideo').addEventListener('click', exportVideo);
   $('#btnPngCurrent').addEventListener('click', () => exportPNG(false));
   $('#btnPngAll').addEventListener('click', () => exportPNG(true));

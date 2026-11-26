@@ -8,7 +8,7 @@
 <title>뾰로롱 쇼츠 편집기 · 1080×1920</title>
 <link rel="preload" as="font" type="font/woff2" href="fonts/NotoSansKR-Black.woff2" crossorigin />
 <link rel="preload" as="font" type="font/woff2" href="fonts/NotoSansKR-Bold.woff2" crossorigin />
-<link rel="stylesheet" href="styles.css?v=2" />
+<link rel="stylesheet" href="styles.css?v=3" />
 </head>
 <body>
 
@@ -166,6 +166,16 @@
     <section class="card">
       <div class="card-head"><h2>내보내기</h2></div>
 
+      <div class="field">
+        <label for="exportFormat">영상 형식</label>
+        <select id="exportFormat">
+          <option value="auto">자동 (MP4 우선)</option>
+          <option value="mp4">MP4 (H.264)</option>
+          <option value="webm">WebM (VP9)</option>
+        </select>
+        <p class="hint">MP4를 지원하지 않는 브라우저·기기는 자동으로 WebM으로 저장됩니다. 유튜브 업로드나 편집 프로그램에서 MP4가 안 열리면 WebM으로 저장해 보세요.</p>
+      </div>
+
       <button id="btnExportVideo" class="btn primary wide" type="button">🎬 영상 저장 (MP4 / WebM)</button>
       <div id="progressWrap" class="progress-wrap hidden">
         <div class="progress"><div id="progressBar" class="bar"></div></div>
@@ -208,6 +218,6 @@
   </form>
 </dialog>
 
-<script src="app.js?v=2"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
