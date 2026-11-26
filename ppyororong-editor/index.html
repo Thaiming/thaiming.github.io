@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0d1015" />
+<meta name="description" content="뾰로롱 건강 쇼츠용 1080×1920 웹 영상 편집기 — 이미지·자막·나레이션으로 쇼츠를 만들고 MP4/WebM으로 저장합니다." />
+<title>뾰로롱 쇼츠 편집기 · 1080×1920</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@700;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="mark" aria-hidden="true">🥗</span>
+    <div class="brand-text">
+      <strong>뾰로롱 쇼츠 편집기</strong>
+      <span class="tag">1080×1920 · 30fps</span>
+    </div>
+  </div>
+  <div class="top-right">
+    <span id="saveStatus" class="save-status">불러오는 중…</span>
+    <button id="btnHelp" class="btn ghost sm" type="button">사용법</button>
+  </div>
+</header>
+
+<main>
+  <!-- ============ 미리보기 ============ -->
+  <section class="stage">
+    <div class="canvas-frame">
+      <canvas id="cv" width="1080" height="1920" aria-label="1080x1920 미리보기"></canvas>
+    </div>
+
+    <div class="transport">
+      <button id="btnPlay" class="btn play" type="button">▶ 재생</button>
+      <input id="scrub" class="scrub" type="range" min="0" max="1000" value="0" step="1" aria-label="재생 위치" />
+      <span id="timeLabel" class="time">0.0 / 0.0s</span>
+    </div>
+
+    <div id="timeline" class="timeline" aria-label="컷 타임라인"></div>
+
+    <p class="stage-note">
+      노란 점선 띠 = 유튜브 하단 UI 안전지대(y 1210–1440). 가이드는 미리보기에만 보이고 저장된 영상·이미지에는 들어가지 않습니다.
+    </p>
+  </section>
+
+  <!-- ============ 편집 패널 ============ -->
+  <aside class="panel">
+
+    <!-- 컷 목록 -->
+    <section class="card">
+      <div class="card-head">
+        <h2>컷 목록 <span id="cutCount" class="muted small"></span></h2>
+        <div class="head-actions">
+          <button id="btnAddIntro" class="btn sm" type="button">＋ 첫화면</button>
+          <button id="btnAddBody" class="btn sm" type="button">＋ 본문</button>
+          <button id="btnAddEnding" class="btn sm" type="button">＋ 엔딩</button>
+        </div>
+      </div>
+      <div id="cutList" class="cut-list"></div>
+      <div class="row gap pad-top">
+        <span class="muted small">총 길이 <strong id="totalDur">0.0초</strong></span>
+      </div>
+    </section>
+
+    <!-- 선택한 컷 -->
+    <section class="card">
+      <div class="card-head">
+        <h2>선택한 컷</h2>
+        <span id="editorTitle" class="muted small"></span>
+      </div>
+
+      <div id="editorEmpty" class="muted pad">위 목록에서 컷을 선택하세요.</div>
+
+      <div id="editor" class="editor hidden">
+        <div class="field">
+          <label>컷 유형</label>
+          <div class="seg" id="typeSeg">
+            <button data-type="intro" type="button">첫 화면</button>
+            <button data-type="body" type="button">본문</button>
+            <button data-type="ending" type="button">엔딩</button>
+          </div>
+          <p class="hint" id="typeHint"></p>
+        </div>
+
+        <div class="field">
+          <label for="cutText">자막 텍스트
+            <span class="hint inline">줄바꿈으로 줄 나누기 · 1번째 줄 흰색, 2번째 줄부터 강조색</span>
+          </label>
+          <textarea id="cutText" rows="3" placeholder="예) 겨울철 면역에 좋은&#10;음식 TOP 5"></textarea>
+        </div>
+
+        <div class="field" id="secondColorField">
+          <label>2번째 줄 색</label>
+          <div class="seg" id="secondColorSeg">
+            <button data-color="yellow" type="button">노랑 #FFD600</button>
+            <button data-color="white" type="button">흰색</button>
+          </div>
+        </div>
+
+        <div class="field" id="endingPresetField">
+          <button id="btnEndingPreset" class="btn sm wide" type="button">엔딩 문구 넣기 — 구독 누르시고 / 오늘도 건강하세요 ♥</button>
+        </div>
+
+        <div class="field">
+          <label>이미지</label>
+          <div class="row gap">
+            <label class="btn file sm">이미지 선택<input id="imgInput" type="file" accept="image/*" multiple hidden /></label>
+            <button id="btnClearImg" class="btn ghost sm" type="button">이미지 지우기</button>
+          </div>
+          <p class="hint">여러 장을 고르면 현재 컷부터 순서대로 채웁니다(모자라면 본문 컷을 자동 추가). 1080×1920 중앙 크롭으로 자동 맞춤.</p>
+        </div>
+
+        <div class="field">
+          <label for="zoom">확대 <span class="val" id="zoomVal">100%</span></label>
+          <input id="zoom" type="range" min="100" max="250" step="1" value="100" />
+        </div>
+
+        <div class="field two">
+          <div>
+            <label for="offX">좌우 이동 <span class="val" id="offXVal">0</span></label>
+            <input id="offX" type="range" min="-540" max="540" step="1" value="0" />
+          </div>
+          <div>
+            <label for="offY">상하 이동 <span class="val" id="offYVal">0</span></label>
+            <input id="offY" type="range" min="-960" max="960" step="1" value="0" />
+          </div>
+        </div>
+
+        <div class="field two">
+          <div>
+            <label for="cutDur">길이 (초)</label>
+            <input id="cutDur" type="number" min="0.5" max="30" step="0.1" value="3" />
+          </div>
+          <div class="align-end">
+            <button id="btnResetFrame" class="btn ghost sm" type="button">크롭 초기화</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 나레이션 -->
+    <section class="card">
+      <div class="card-head"><h2>나레이션 오디오</h2></div>
+      <div class="row gap">
+        <label class="btn file sm">오디오 선택<input id="audioInput" type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg" hidden /></label>
+        <button id="btnClearAudio" class="btn ghost sm" type="button">오디오 삭제</button>
+      </div>
+      <p class="hint" id="audioInfo">MP3 · WAV · M4A · AAC. 재생 미리보기와 영상 내보내기에 함께 쓰입니다.</p>
+      <div class="field">
+        <label for="volume">볼륨 <span class="val" id="volVal">100%</span></label>
+        <input id="volume" type="range" min="0" max="100" step="1" value="100" />
+      </div>
+    </section>
+
+    <!-- 화면 설정 -->
+    <section class="card">
+      <div class="card-head"><h2>화면 설정</h2></div>
+      <label class="check"><input id="safeZone" type="checkbox" checked /> 유튜브 안전지대 가이드 표시</label>
+      <label class="check"><input id="bodyScrim" type="checkbox" checked /> 본문 자막 뒤를 어둡게 (가독성)</label>
+    </section>
+
+    <!-- 내보내기 -->
+    <section class="card">
+      <div class="card-head"><h2>내보내기</h2></div>
+
+      <button id="btnExportVideo" class="btn primary wide" type="button">🎬 영상 저장 (MP4 / WebM)</button>
+      <div id="progressWrap" class="progress-wrap hidden">
+        <div class="progress"><div id="progressBar" class="bar"></div></div>
+        <span id="progressText" class="muted small">0%</span>
+      </div>
+      <p class="hint" id="exportHint">1080×1920 · 30fps · 나레이션 합성. 실제 영상 길이만큼 시간이 걸리니, 녹화 중에는 탭을 닫거나 다른 앱으로 전환하지 마세요.</p>
+
+      <div class="row gap">
+        <button id="btnPngCurrent" class="btn sm" type="button">현재 컷 PNG</button>
+        <button id="btnPngAll" class="btn sm" type="button">전체 컷 PNG</button>
+      </div>
+
+      <hr />
+
+      <div class="row gap wrap">
+        <button id="btnSaveJson" class="btn sm" type="button">프로젝트 저장(.json)</button>
+        <label class="btn sm file">프로젝트 불러오기<input id="jsonInput" type="file" accept="application/json,.json" hidden /></label>
+        <button id="btnNewProject" class="btn danger sm" type="button">새로 시작</button>
+      </div>
+      <p class="hint">JSON에는 컷·이미지·나레이션이 모두 담깁니다. 작업 내용은 이 브라우저에 자동 저장되며, 모든 처리는 기기 안에서만 이루어집니다(서버 전송 없음).</p>
+    </section>
+
+  </aside>
+</main>
+
+<dialog id="helpDialog" class="help">
+  <form method="dialog">
+    <h2>뾰로롱 쇼츠 편집기 사용법</h2>
+    <ol>
+      <li><strong>컷 구성</strong> — 22컷 기준으로 <em>＋ 본문</em>을 눌러 늘리세요. 컷마다 ▲▼로 순서를 바꾸고, 복제·삭제할 수 있습니다.</li>
+      <li><strong>이미지</strong> — 컷을 고른 뒤 <em>이미지 선택</em>에서 여러 장을 한꺼번에 고르면 현재 컷부터 차례로 들어갑니다. 확대·좌우/상하 슬라이더로 구도를 미세 조정합니다.</li>
+      <li><strong>자막</strong> — 줄바꿈으로 줄을 나눕니다. 첫 줄은 흰색, 둘째 줄부터는 노랑(#FFD600) 또는 흰색을 고를 수 있습니다. 모든 글자에 검은 외곽선이 들어갑니다.</li>
+      <li><strong>엔딩</strong> — 엔딩 컷에서 <em>엔딩 문구 넣기</em>를 누르면 “구독 누르시고 / 오늘도 건강하세요 ♥”가 들어가고 ♥만 빨갛게 표시됩니다.</li>
+      <li><strong>나레이션</strong> — MP3/WAV/M4A를 올리고 ▶재생으로 전체 타임라인을 확인합니다. 컷 길이의 합과 나레이션 길이가 비슷해야 어긋나지 않습니다.</li>
+      <li><strong>영상 저장</strong> — <em>영상 저장</em>을 누르면 1080×1920·30fps로 실시간 녹화합니다(영상 길이만큼 소요). 크롬·엣지는 MP4를 지원하면 MP4, 아니면 WebM으로 저장됩니다. 아이폰 사파리는 iOS 16.4 이상에서 동작합니다.</li>
+      <li><strong>유튜브 업로드</strong> — 저장한 파일을 유튜브 스튜디오에 올리고, 아동용 아님 · 변경된 콘텐츠(AI) 예로 설정하면 됩니다.</li>
+    </ol>
+    <p class="hint">문제가 있으면 <em>새로 시작</em> 전에 <em>프로젝트 저장(.json)</em>으로 백업해 두세요.</p>
+    <div class="help-actions"><button class="btn primary" value="close">닫기</button></div>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
