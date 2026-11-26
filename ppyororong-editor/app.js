@@ -1162,7 +1162,7 @@ async function exportVideo() {
     }
   }
 
-  const job = { cancel: false, rec, src, gain, dest, vstream, chunks: [], raf: 0 };
+  const job = { cancel: false, rec, src, gain, dest, vstream, chunks: [], timer: 0 };
   exportJob = job;
   rec.ondataavailable = (ev) => { if (ev.data && ev.data.size) job.chunks.push(ev.data); };
   rec.onerror = (ev) => { console.warn('rec error', ev); };
@@ -1219,13 +1219,13 @@ async function exportVideo() {
     if (t >= total) { finish(); return; }
     renderForExport(Math.max(0, t));
     showProgress(t / total, `${t.toFixed(1)}s / ${total.toFixed(1)}s · ${Math.round((t / total) * 100)}%`);
-    job.raf = requestAnimationFrame(tick);
+    job.timer = setTimeout(tick, 33);
   };
-  job.raf = requestAnimationFrame(tick);
+  tick();
 }
 
 function cleanupExport(job) {
-  if (job.raf) cancelAnimationFrame(job.raf);
+  if (job.timer) clearTimeout(job.timer);
   exportJob = null;
   setExportUI(false);
   hideProgress();
